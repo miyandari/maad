@@ -1,0 +1,871 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================ enums ============================
+
+enum Role {
+  SUPER_ADMIN     // مدیرکل
+  SENIOR_ADMIN    // مدیر ارشد (هر دانشگاه)
+  SYSTEM_MANAGER  // مدیر سیستم (رئیس اداره خوابگاه‌ها)
+  DORM_SUPERVISOR // سرپرست خوابگاه
+  ATTENDANT       // متصدی
+  SERVICE_STAFF   // خدمات
+  COUNSELING      // اداره مشاوره و سلامت روان
+  HEALTH_LIAISON  // رابط بهداشت (دانشگاه‌محور؛ در همه‌ی خوابگاه‌ها بازرسی می‌کند)
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum RoomType {
+  RESIDENTIAL       // اتاق سکونت (دارای تخت)
+  COUNSELING        // اتاق مشاوره
+  GYM               // سالن ورزشی
+  PRAYER            // نمازخانه
+  ISOLATION         // اتاق ایزوله
+  FOOD_DISTRIBUTION // محل پخش غذا
+}
+
+enum DormitoryType {
+  OWNED                    // ملکی
+  RENTED                   // استیجاری
+  SELF_MANAGED_PARTNERSHIP // خودگردان مشارکتی
+  SELF_MANAGED             // خودگردان
+}
+
+enum EmploymentType {
+  OFFICIAL          // رسمی
+  CONTRACT          // قراردادی
+  CONTRACT_ARTICLE4 // قراردادی تبصره ۴
+  CORPORATE         // شرکتی
+  HOURLY            // ساعتی
+  PROJECT           // طرحی
+}
+
+enum DegreeLevel {
+  BACHELOR           // کارشناسی
+  MASTER             // کارشناسی ارشد
+  DOCTORATE_GENERAL  // دکترای عمومی
+  PHD                // دکترای تخصصی
+}
+
+enum GuardianRelation {
+  FATHER
+  MOTHER
+}
+
+enum EmergencyRelation {
+  FRIEND
+  BROTHER
+  SISTER
+  RELATIVE
+}
+
+enum HealthFollowStatus {
+  OPEN        // مورد دارد و هنوز اقدامی ثبت نشده
+  IN_PROGRESS // اقدام / مانع ثبت شده ولی رفع نشده
+  RESOLVED
+}
+
+enum StudentWorkPost {
+  ATTENDANT_DUTY     // تصدی‌گری
+  FOOD_DISTRIBUTION  // پخش غذا
+  ATTENDANCE_LIAISON // رابط حضور و غیاب
+  HEALTH_LIAISON     // رابط بهداشت
+}
+
+enum ResidencyStatus {
+  NOT_HOUSED
+  RESIDENT
+  ON_LEAVE
+  CHECKED_OUT // تسویه‌شده
+}
+
+enum AssignmentKind {
+  BED   // تخت
+  FLOOR // کف‌خواب
+  EXTRA // نفر مازاد
+}
+
+enum AssignmentEndReason {
+  ROOM_CHANGE
+  FLOOR_TO_BED
+  CHECKOUT
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  ON_LEAVE
+}
+
+enum ShiftType {
+  REGULAR
+  EXTRA // شیفت فوق‌العاده (مثلاً در خوابگاه دیگر)
+  COVER // جایگزین فرد مرخصی‌رفته
+}
+
+enum LeaveKind {
+  DAILY
+  HOURLY
+}
+
+enum LeaveStatus {
+  PENDING_SUPERVISOR
+  PENDING_MANAGER
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum ReportCategory {
+  FOOD_RECEIPT        // دریافت غذا
+  FOOD_DELIVERY       // تحویل اقلام غذایی
+  OFFICIAL_VISIT      // حضور مسئولین
+  UNEXPECTED_BEHAVIOR // رفتار غیرمنتظره
+  OTHER
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+}
+
+enum ReportStatus {
+  SUBMITTED
+  REVIEWED
+  ESCALATED // ارسال‌شده به مدیر سیستم
+}
+
+enum ConcernType {
+  BEHAVIOR_CHANGE
+  SELF_HARM
+  OTHER
+}
+
+enum Urgency {
+  NORMAL
+  URGENT
+}
+
+enum ReferralStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+  RECEIVED
+  SCHEDULED
+  CLOSED
+}
+
+enum RequestKind {
+  REPAIR
+  EQUIPMENT
+}
+
+enum RepairCategory {
+  BUILDING
+  MECHANICAL
+  ELECTRICAL
+  COOLING_HEATING
+}
+
+enum MaintenanceStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+  IN_PROGRESS
+  FIXED
+  CLOSED
+}
+
+enum AttachmentEntity {
+  MAINTENANCE
+  DORM_REPORT
+}
+
+enum ChecklistReportStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum MissionStatus {
+  ASSIGNED
+  DONE
+}
+
+enum SmsStatus {
+  NONE
+  PENDING
+  SENDING
+  SENT
+  DELIVERED
+  FAILED
+}
+
+enum BatchStatus {
+  SCHEDULED
+  QUEUED
+  COMPLETED
+  CANCELLED
+}
+
+enum RecipientType {
+  USER
+  STUDENT
+}
+
+// ============================ core ============================
+
+model University {
+  id               String      @id @default(uuid())
+  name             String      @unique
+  code             String      @unique
+  isActive         Boolean     @default(true)
+  disabledFeatures String[]    @default([]) // e.g. "messaging", "counseling" (see FEATURES in code)
+  createdAt        DateTime    @default(now())
+  users            User[]
+  dormitories      Dormitory[]
+  students         Student[]
+}
+
+model User {
+  id                 String      @id @default(uuid())
+  universityId       String?     // null only for SUPER_ADMIN
+  university         University? @relation(fields: [universityId], references: [id])
+  dormitoryId        String?     // DORM_SUPERVISOR / ATTENDANT / SERVICE_STAFF: base dormitory
+  dormitory          Dormitory?  @relation(fields: [dormitoryId], references: [id])
+  username           String      @unique // national ID for everyone except the seeded super admin
+  passwordHash       String
+  firstName          String
+  lastName           String
+  phone              String?
+  jobTitle           String?
+  employmentType     EmploymentType?
+  role               Role
+  isStudentWorker    Boolean     @default(false) // کار دانشجویی (only ATTENDANT)
+  workerPost         StudentWorkPost?
+  permissions        String[]    @default([])    // e.g. "sms.send"
+  smsOptOut          Boolean     @default(false)
+  isActive           Boolean     @default(true)
+  mustChangePassword Boolean     @default(true)
+  failedLogins       Int         @default(0)
+  lockedUntil        DateTime?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  shifts              Shift[]
+  presences           StaffPresence[]
+  leaveRequests       LeaveRequest[]
+  dormReports         DormReport[]
+  referralsReported   Referral[]
+  maintenanceRequests MaintenanceRequest[]
+  checklistReports    ChecklistReport[]
+  missions            Mission[]
+  messageRecipients   MessageRecipient[]
+  healthInspections   HealthInspection[]
+
+  @@index([universityId, role])
+  @@index([dormitoryId])
+}
+
+model Dormitory {
+  id              String     @id @default(uuid())
+  universityId    String
+  university      University @relation(fields: [universityId], references: [id])
+  name            String
+  nominalCapacity Int
+  latitude        Float?
+  longitude       Float?
+  landline        String?
+  address         String?
+  ownershipType   DormitoryType? // ملکی / استیجاری / خودگردان مشارکتی / خودگردان
+  gender          Gender
+  isActive        Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+
+  buildings              Building[]
+  users                  User[]
+  shifts                 Shift[]
+  maintenanceRequests    MaintenanceRequest[]
+  psychologistSchedules  PsychologistSchedule[]
+
+  @@unique([universityId, name])
+}
+
+model Building {
+  id          String    @id @default(uuid())
+  dormitoryId String
+  dormitory   Dormitory @relation(fields: [dormitoryId], references: [id], onDelete: Cascade)
+  name        String
+  rooms       Room[]
+
+  @@unique([dormitoryId, name])
+}
+
+model Room {
+  id          String       @id @default(uuid())
+  buildingId  String
+  building    Building     @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  number      String
+  floor       Int?
+  type        RoomType     @default(RESIDENTIAL)
+  capacity    Int          @default(0)
+  beds        Bed[]
+  assignments Assignment[]
+
+  @@unique([buildingId, number])
+}
+
+model Bed {
+  id          String       @id @default(uuid())
+  roomId      String
+  room        Room         @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  label       String
+  assignments Assignment[]
+
+  @@unique([roomId, label])
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  actorId      String?
+  actorRole    Role?
+  universityId String?
+  action       String
+  entity       String
+  entityId     String?
+  meta         Json?
+  createdAt    DateTime @default(now())
+
+  @@index([universityId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+// ============================ students & housing ============================
+
+model Student {
+  id                    String          @id @default(uuid())
+  universityId          String
+  university            University      @relation(fields: [universityId], references: [id])
+  registeredDormitoryId String?         // dormitory whose supervisor registered the student
+  nationalId            String
+  studentNumber         String?
+  firstName             String
+  lastName              String
+  fatherName            String?
+  gender                Gender
+  phone                 String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  major                 String?
+  degree                DegreeLevel?
+  landline              String?
+  guardianPhone         String?
+  guardianRelation      GuardianRelation?
+  emergencyContactRelation EmergencyRelation?
+  status                ResidencyStatus @default(NOT_HOUSED)
+  smsOptOut             Boolean         @default(false)
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  assignments Assignment[]
+  leaves      StudentLeave[]
+  attendance  AttendanceRecord[]
+  referrals   Referral[]
+
+  @@unique([universityId, nationalId])
+  @@index([universityId, status])
+}
+
+model Assignment {
+  id          String               @id @default(uuid())
+  studentId   String
+  student     Student              @relation(fields: [studentId], references: [id])
+  dormitoryId String               // denormalised for scope queries
+  roomId      String
+  room        Room                 @relation(fields: [roomId], references: [id])
+  bedId       String?
+  bed         Bed?                 @relation(fields: [bedId], references: [id], onDelete: SetNull)
+  kind        AssignmentKind
+  startedAt   DateTime             @default(now())
+  endedAt     DateTime?
+  endReason   AssignmentEndReason?
+  note        String?
+  createdById String
+  // DB-level guarantees: set while active, NULL once ended (NULLs never collide in a unique index)
+  activeStudentKey String? @unique
+  activeBedKey     String? @unique
+
+  @@index([dormitoryId, endedAt])
+  @@index([roomId, endedAt])
+  @@index([studentId])
+}
+
+model StudentLeave {
+  id               String    @id @default(uuid())
+  studentId        String
+  student          Student   @relation(fields: [studentId], references: [id])
+  startsAt         DateTime  @default(now())
+  expectedReturnAt DateTime?
+  returnedAt       DateTime?
+  reason           String?
+  createdById      String
+
+  @@index([studentId])
+}
+
+model AttendanceRecord {
+  id           String           @id @default(uuid())
+  studentId    String
+  student      Student          @relation(fields: [studentId], references: [id])
+  dormitoryId  String
+  date         DateTime         @db.Date
+  status       AttendanceStatus
+  note         String?
+  recordedById String
+  recordedAt   DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@unique([studentId, date])
+  @@index([dormitoryId, date])
+}
+
+// ============================ staff: shifts, presence, leave ============================
+
+model Shift {
+  id          String    @id @default(uuid())
+  dormitoryId String
+  dormitory   Dormitory @relation(fields: [dormitoryId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  startsAt    DateTime
+  endsAt      DateTime
+  type        ShiftType @default(REGULAR)
+  note        String?
+  cancelledAt DateTime?
+  // minutes of the shift that count as overtime (holiday extension 08:00 -> 14:00 = 360)
+  overtimeMinutes Int @default(0)
+  createdById String
+  createdAt   DateTime  @default(now())
+  presences   StaffPresence[]
+
+  @@index([dormitoryId, startsAt])
+  @@index([userId, startsAt])
+}
+
+model StaffPresence {
+  id                 String    @id @default(uuid())
+  universityId       String
+  userId             String
+  user               User      @relation(fields: [userId], references: [id])
+  dormitoryId        String
+  shiftId            String?
+  shift              Shift?    @relation(fields: [shiftId], references: [id])
+  checkInAt          DateTime  @default(now())
+  checkOutAt         DateTime?
+  unscheduled        Boolean   @default(false)
+  handoverFromUserId String?
+  handoverNote       String?
+  checkOutNote       String? // report handed to the supervisor / next attendant at check-out
+
+  @@index([dormitoryId, checkInAt])
+  @@index([userId, checkInAt])
+}
+
+model LeaveRequest {
+  id             String      @id @default(uuid())
+  universityId   String
+  dormitoryId    String?
+  requesterId    String
+  requester      User        @relation(fields: [requesterId], references: [id])
+  kind           LeaveKind
+  startsAt       DateTime
+  endsAt         DateTime
+  reason         String?
+  status         LeaveStatus
+  supervisorId   String?
+  supervisorAt   DateTime?
+  supervisorNote String?
+  managerId      String?
+  managerAt      DateTime?
+  managerNote    String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([universityId, status])
+  @@index([dormitoryId, status])
+  @@index([requesterId])
+}
+
+// ============================ dormitory reports ============================
+
+model DormReport {
+  id           String         @id @default(uuid())
+  universityId String
+  dormitoryId  String
+  authorId     String
+  author       User           @relation(fields: [authorId], references: [id])
+  category     ReportCategory
+  occurredAt   DateTime       @default(now())
+  title        String
+  description  String?
+  mealType     MealType?
+  quantity     Int?
+  visitorName  String?
+  studentId    String?
+  status       ReportStatus   @default(SUBMITTED)
+  reviewNote   String?
+  reviewedById String?
+  reviewedAt   DateTime?
+  escalatedAt  DateTime?
+  createdAt    DateTime       @default(now())
+
+  @@index([dormitoryId, occurredAt])
+  @@index([universityId, status])
+}
+
+// ============================ counseling ============================
+
+model Referral {
+  id             String         @id @default(uuid())
+  universityId   String
+  dormitoryId    String
+  studentId      String
+  student        Student        @relation(fields: [studentId], references: [id])
+  reportedById   String
+  reportedBy     User           @relation(fields: [reportedById], references: [id])
+  concernType    ConcernType
+  urgency        Urgency        @default(NORMAL)
+  narrative      String
+  status         ReferralStatus @default(SUBMITTED)
+  supervisorId   String?
+  supervisorAt   DateTime?
+  supervisorNote String?
+  receivedById   String?
+  receivedAt     DateTime?
+  scheduledAt    DateTime?
+  counselingNote String?
+  closedAt       DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([universityId, status])
+  @@index([dormitoryId, status])
+  @@index([reportedById])
+}
+
+model PsychologistSchedule {
+  id               String    @id @default(uuid())
+  universityId     String
+  dormitoryId      String
+  dormitory        Dormitory @relation(fields: [dormitoryId], references: [id])
+  psychologistName String
+  startsAt         DateTime
+  endsAt           DateTime
+  location         String?
+  note             String?
+  createdById      String
+  createdAt        DateTime  @default(now())
+
+  @@index([dormitoryId, startsAt])
+  @@index([universityId, startsAt])
+}
+
+// ============================ maintenance & equipment ============================
+
+model MaintenanceRequest {
+  id            String            @id @default(uuid())
+  universityId  String
+  dormitoryId   String
+  dormitory     Dormitory         @relation(fields: [dormitoryId], references: [id])
+  requestedById String
+  requestedBy   User              @relation(fields: [requestedById], references: [id])
+  kind          RequestKind
+  category      RepairCategory?
+  title         String
+  description   String?
+  quantity      Int?
+  status        MaintenanceStatus @default(SUBMITTED)
+  estimatedCost Decimal?          @db.Decimal(16, 0)
+  actualCost    Decimal?          @db.Decimal(16, 0)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  events        MaintenanceEvent[]
+
+  @@index([universityId, status])
+  @@index([dormitoryId, status])
+}
+
+model MaintenanceEvent {
+  id         String             @id @default(uuid())
+  requestId  String
+  request    MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  actorId    String
+  fromStatus MaintenanceStatus?
+  toStatus   MaintenanceStatus
+  note       String?
+  createdAt  DateTime           @default(now())
+
+  @@index([requestId, createdAt])
+}
+
+model Attachment {
+  id           String           @id @default(uuid())
+  universityId String
+  dormitoryId  String?
+  entity       AttachmentEntity
+  entityId     String
+  filename     String
+  mimeType     String
+  size         Int
+  storageKey   String           @unique
+  uploadedById String
+  createdAt    DateTime         @default(now())
+
+  @@index([entity, entityId])
+}
+
+// ============================ service staff: checklists & missions ============================
+
+model ChecklistTemplate {
+  id           String            @id @default(uuid())
+  universityId String
+  dormitoryId  String?           // null = applies to every dormitory of the university
+  name         String
+  isActive     Boolean           @default(true)
+  createdById  String
+  createdAt    DateTime          @default(now())
+  items        ChecklistItem[]
+  reports      ChecklistReport[]
+
+  @@index([universityId])
+}
+
+model ChecklistItem {
+  id         String            @id @default(uuid())
+  templateId String
+  template   ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  title      String
+  order      Int
+  results    ChecklistResult[]
+}
+
+model ChecklistReport {
+  id           String                @id @default(uuid())
+  universityId String
+  dormitoryId  String
+  templateId   String
+  template     ChecklistTemplate     @relation(fields: [templateId], references: [id])
+  reporterId   String
+  reporter     User                  @relation(fields: [reporterId], references: [id])
+  date         DateTime              @db.Date
+  status       ChecklistReportStatus @default(SUBMITTED)
+  decidedById  String?
+  decidedAt    DateTime?
+  decisionNote String?
+  createdAt    DateTime              @default(now())
+  results      ChecklistResult[]
+
+  @@unique([templateId, reporterId, date])
+  @@index([dormitoryId, date])
+}
+
+model ChecklistResult {
+  id       String          @id @default(uuid())
+  reportId String
+  report   ChecklistReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  itemId   String
+  item     ChecklistItem   @relation(fields: [itemId], references: [id])
+  done     Boolean
+  note     String?
+
+  @@unique([reportId, itemId])
+}
+
+model Mission {
+  id           String        @id @default(uuid())
+  universityId String
+  dormitoryId  String?
+  assigneeId   String
+  assignee     User          @relation(fields: [assigneeId], references: [id])
+  assignedById String
+  title        String
+  description  String?
+  dueAt        DateTime?
+  status       MissionStatus @default(ASSIGNED)
+  doneAt       DateTime?
+  resultNote   String?
+  createdAt    DateTime      @default(now())
+
+  @@index([universityId, status])
+  @@index([assigneeId, status])
+}
+
+// ============================ messaging ============================
+
+model MessageTemplate {
+  id           String   @id @default(uuid())
+  universityId String
+  name         String
+  body         String
+  createdById  String
+  createdAt    DateTime @default(now())
+
+  @@unique([universityId, name])
+}
+
+model MessageBatch {
+  id              String      @id @default(uuid())
+  universityId    String
+  senderId        String
+  senderName      String
+  senderRole      Role
+  body            String
+  inApp           Boolean
+  sms             Boolean
+  audience        Json
+  scheduledAt     DateTime?
+  status          BatchStatus
+  totalRecipients Int
+  smsRecipients   Int         @default(0)
+  smsParts        Int         @default(0)
+  estimatedCost   Decimal?    @db.Decimal(16, 0)
+  createdAt       DateTime    @default(now())
+  recipients      MessageRecipient[]
+
+  @@index([universityId, createdAt])
+  @@index([senderId, createdAt])
+  @@index([status, scheduledAt])
+}
+
+model MessageRecipient {
+  id                String        @id @default(uuid())
+  batchId           String
+  batch             MessageBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  recipientType     RecipientType
+  userId            String?
+  user              User?         @relation(fields: [userId], references: [id])
+  studentId         String?
+  dormitoryId       String?
+  name              String
+  phone             String?
+  renderedBody      String
+  smsStatus         SmsStatus     @default(NONE)
+  providerMessageId String?
+  error             String?
+  attempts          Int           @default(0)
+  nextAttemptAt     DateTime      @default(now())
+  lockedAt          DateTime?
+  sentAt            DateTime?
+  statusChecks      Int           @default(0)
+  statusCheckedAt   DateTime?
+  readAt            DateTime?
+  createdAt         DateTime      @default(now())
+
+  @@index([batchId])
+  @@index([smsStatus, nextAttemptAt])
+  @@index([userId, createdAt])
+  @@index([dormitoryId])
+}
+
+// ============================ offline sync ============================
+
+// Replay protection: the client sends an Idempotency-Key header; a repeated key returns the first response.
+model IdempotencyKey {
+  id          String    @id @default(uuid())
+  userId      String
+  key         String
+  method      String
+  path        String
+  completedAt DateTime?
+  response    Json?
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, key])
+  @@index([createdAt])
+}
+
+// ============================ health inspection (رابط بهداشت) ============================
+
+/// The liaison's own checklist titles (one list per university).
+model HealthItem {
+  id           String   @id @default(uuid())
+  universityId String
+  title        String
+  order        Int
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@index([universityId, order])
+}
+
+model HealthInspection {
+  id           String         @id @default(uuid())
+  universityId String
+  dormitoryId  String
+  inspectorId  String
+  inspector    User           @relation(fields: [inspectorId], references: [id])
+  inspectedAt  DateTime
+  note         String?
+  issueCount   Int            @default(0)
+  createdAt    DateTime       @default(now())
+  results      HealthResult[]
+
+  @@index([dormitoryId, inspectedAt])
+  @@index([universityId, inspectedAt])
+}
+
+model HealthResult {
+  id           String                @id @default(uuid())
+  inspectionId String
+  inspection   HealthInspection      @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  universityId String
+  dormitoryId  String
+  position     Int
+  itemTitle    String                // snapshot: later edits of the checklist never change history
+  ok           Boolean
+  description  String?
+  followStatus HealthFollowStatus?   // null when ok
+  actionTaken  String?               // supervisor: what was done
+  obstacles    String?               // supervisor: what is in the way
+  followUpById String?
+  followUpAt   DateTime?
+  createdAt    DateTime              @default(now())
+
+  @@index([dormitoryId, followStatus])
+  @@index([universityId, followStatus])
+  @@index([inspectionId])
+}
+
+// ============================ shift rules ============================
+
+/// Per-university shift rules. Defaults: shift 14:00 -> 08:00 next day (hand-over to the supervisor);
+/// if the next morning is a holiday the attendant stays until 14:00 (the extra 6 hours are overtime).
+model ShiftSettings {
+  universityId   String   @id
+  startHour      Int      @default(14)
+  workdayEndHour Int      @default(8)
+  holidayEndHour Int      @default(14)
+  weeklyOffDays  Int[]    @default([5]) // JS weekday numbers: 0 = Sunday ... 5 = Friday ... 6 = Saturday
+  updatedAt      DateTime @updatedAt
+}
+
+model Holiday {
+  id           String   @id @default(uuid())
+  universityId String
+  date         DateTime @db.Date
+  title        String
+  createdAt    DateTime @default(now())
+
+  @@unique([universityId, date])
+}

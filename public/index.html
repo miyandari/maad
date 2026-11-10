@@ -1,0 +1,1446 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ماد — مدیریت اسکان دانشجویی</title>
+<meta name="theme-color" content="#14202e">
+<link rel="manifest" href="/manifest.webmanifest">
+<style>
+:root{--bg:#eef3fa;--card:#fff;--ink:#1b2735;--mut:#6a778a;--line:#e5ecf5;--pri:#1e6fd9;--pri-d:#1858ae;--ok:#12805c;--bad:#c0392b;--warn:#b7791f;--sh:0 8px 26px rgba(15,40,90,.08)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(180deg,#e3edfa 0,var(--bg) 360px) fixed;color:var(--ink);font:14px/1.75 "Segoe UI",Tahoma,system-ui,sans-serif}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 20px;color:#fff;background:radial-gradient(700px 200px at 90% -40%,#2f7de0 0,transparent 70%),linear-gradient(135deg,#0e2a55,#12202f);box-shadow:0 6px 22px rgba(10,25,60,.28)}
+header h1{font-size:18px;margin:0;flex:none;letter-spacing:.3px}
+.brand{display:flex;align-items:center;gap:10px;flex:1}
+.logo{display:inline-block;line-height:0;flex:none}.logo svg{width:100%;height:100%}
+header .who{font-size:12.5px;opacity:.85}
+.shell{display:flex;gap:16px;padding:16px 20px;align-items:flex-start;max-width:1500px;margin:0 auto}
+nav{flex:0 0 206px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:8px;position:sticky;top:12px;box-shadow:var(--sh)}
+nav button{display:block;width:100%;text-align:right;background:none;border:0;padding:8px 12px;margin:1px 0;border-radius:10px;font:inherit;font-size:13.5px;color:var(--ink);cursor:pointer;transition:background .15s}
+nav button:hover{background:#eef4fc}
+nav button.on{background:linear-gradient(135deg,#3b8cf0,#1858ae);color:#fff;box-shadow:0 6px 14px rgba(30,111,217,.3)}
+main{flex:1;min-width:0;animation:fade .3s ease both}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:14px;box-shadow:var(--sh)}
+.card h2,.card h3{margin:0 0 10px;font-size:15px}
+.card h3{font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.stat{background:linear-gradient(135deg,#f1f7ff,#fff);border:1px solid #dfeaf8;border-radius:14px;padding:11px 14px}
+.stat b{display:block;font-size:22px;line-height:1.5;background:linear-gradient(135deg,#2f7de0,#1858ae);-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat span{color:var(--mut);font-size:12.5px}
+.form{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px 12px;align-items:end}
+.form label{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--mut)}
+.form label.chk{flex-direction:row;align-items:center;gap:8px;color:var(--ink)}
+input,select,textarea{font:inherit;font-size:14px;padding:0 12px;height:40px;border:1.5px solid #e1e8f1;border-radius:11px;background:#f6f9fd;color:var(--ink);width:100%;transition:border-color .15s,box-shadow .15s,background .15s}
+textarea{height:auto;padding:9px 12px}
+input[type=checkbox]{width:auto;height:auto;accent-color:var(--pri)}
+input:focus,select:focus,textarea:focus{outline:none;background:#fff;border-color:var(--pri);box-shadow:0 0 0 4px rgba(30,111,217,.14)}
+.btn{font:inherit;font-size:13.5px;font-weight:600;border:0;color:#fff;padding:0 16px;height:38px;border-radius:11px;cursor:pointer;background:linear-gradient(135deg,#3b8cf0,#1858ae);box-shadow:0 6px 14px rgba(30,111,217,.26);transition:transform .12s,box-shadow .12s,filter .12s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 9px 18px rgba(30,111,217,.34)}
+.btn:active{transform:none}
+.btn.sm{height:30px;padding:0 12px;font-size:12.5px;border-radius:9px;box-shadow:0 4px 10px rgba(30,111,217,.22)}
+.btn.ghost{background:#e9f0f9;color:var(--ink);box-shadow:none}.btn.ghost:hover{background:#dde8f5;box-shadow:none}
+.btn.ok{background:linear-gradient(135deg,#25ab80,#12805c);box-shadow:0 6px 14px rgba(18,128,92,.26)}
+.btn.bad{background:linear-gradient(135deg,#e5655a,#c0392b);box-shadow:0 6px 14px rgba(192,57,43,.26)}
+.btn.warn{background:linear-gradient(135deg,#e0a33a,#b7791f);box-shadow:0 6px 14px rgba(183,121,31,.26)}
+.btn:disabled{opacity:.55;cursor:default;transform:none}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:7px 12px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;vertical-align:middle}
+tr:last-child td{border-bottom:0}
+th{background:#f2f6fc;color:var(--mut);font-weight:600;font-size:12px}
+tbody tr:hover td{background:#f8fbff}
+td .btn{margin:2px 0 2px 4px}
+td.actions{white-space:normal;min-width:230px}
+.tag{display:inline-block;padding:0 9px;border-radius:999px;font-size:12px;line-height:22px;background:#e8eef6;color:#43526a}
+.tag.ok{background:#daf3e9;color:var(--ok)}.tag.bad{background:#fde3df;color:var(--bad)}.tag.warn{background:#fdf0d3;color:var(--warn)}
+.muted{color:var(--mut)}
+p{margin:0 0 10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.seg{display:inline-flex}
+.seg button{border:1.5px solid #d5deea;background:#fff;padding:5px 13px;font:inherit;font-size:13px;cursor:pointer;color:var(--ink);margin-right:-1.5px}
+.seg button:first-child{border-radius:0 9px 9px 0;margin-right:0}.seg button:last-child{border-radius:9px 0 0 9px}
+.seg button.on.PRESENT{background:linear-gradient(135deg,#25ab80,#12805c);color:#fff;border-color:var(--ok)}
+.seg button.on.ABSENT{background:linear-gradient(135deg,#e5655a,#c0392b);color:#fff;border-color:var(--bad)}
+.seg button.on.ON_LEAVE{background:linear-gradient(135deg,#e0a33a,#b7791f);color:#fff;border-color:var(--warn)}
+.seg.big button{padding:8px 14px;font-size:14px;min-width:62px}
+.arow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+.arow:last-child{border-bottom:0}.aname{flex:1;min-width:120px}
+.savebar{position:sticky;bottom:10px;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:14px;padding:9px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;box-shadow:0 10px 30px rgba(15,40,90,.18);z-index:5;margin-top:12px}
+.overlay{position:fixed;inset:0;background:rgba(8,18,36,.55);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50;animation:fade .2s ease both}
+.modal{background:#fff;border-radius:20px;padding:20px 22px;max-width:520px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 30px 80px rgba(5,15,40,.45)}
+.modal h3{margin:0 0 12px;font-size:16px}
+.modal .form{grid-template-columns:1fr}
+.modal>.btn.ghost{margin-top:10px;width:100%}
+#toast{position:fixed;bottom:18px;left:18px;right:18px;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;z-index:99}
+#toast div{background:#14202e;color:#fff;padding:9px 18px;border-radius:12px;max-width:640px;pointer-events:auto;font-size:13.5px;box-shadow:0 12px 30px rgba(5,15,40,.35);animation:rise .25s ease both}
+#toast .err{background:var(--bad)}#toast .ok{background:var(--ok)}#toast .warn{background:var(--warn)}
+pre{background:#f4f8fd;border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;direction:ltr;text-align:left;font-size:12.5px}
+.ltr{direction:ltr;text-align:left}
+a{color:var(--pri)}
+.sync{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+/* ---- login ---- */
+.login-bg{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:88px 20px 36px;position:relative;overflow:hidden;background:radial-gradient(1100px 560px at 88% -8%,#2f7de0 0,transparent 62%),radial-gradient(900px 520px at -12% 112%,#1b9aaa 0,transparent 58%),linear-gradient(160deg,#0e2a55,#12202f)}
+.login-bg::before,.login-bg::after{content:"";position:absolute;border-radius:50%;background:#fff;opacity:.07}
+.login-bg::before{width:460px;height:460px;top:-170px;left:-130px}.login-bg::after{width:320px;height:320px;bottom:-120px;right:-90px}
+.login-card{position:relative;z-index:1;width:100%;max-width:392px;background:#fff;border-radius:24px;padding:0 30px 24px;box-shadow:0 30px 80px rgba(5,15,40,.5);text-align:center;animation:rise .5s ease both}
+.login-card .logo{width:80px;height:80px;margin:-40px auto 12px;filter:drop-shadow(0 12px 20px rgba(15,60,130,.5))}
+.login-card h1{margin:0;font-size:26px;color:#14202e;letter-spacing:.5px}
+.login-card .tagline{margin:2px 0 20px;color:var(--mut);font-size:13px}
+.lf{position:relative;margin-bottom:12px}
+.lf>svg{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:#8a97a8;pointer-events:none}
+.lf input{height:46px;padding:0 42px 0 40px;font-size:14.5px;border-radius:13px;text-align:right}
+.lf .eye{position:absolute;left:5px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;color:#8a97a8;padding:7px;line-height:0;box-shadow:none;height:auto}
+.lf .eye:hover{color:var(--pri);transform:translateY(-50%)}.lf .eye svg{width:18px;height:18px}
+.login-btn{width:100%;height:48px;margin-top:4px;font:inherit;font-size:16px;font-weight:700;border:0;border-radius:14px;color:#fff;cursor:pointer;background:linear-gradient(135deg,#3b8cf0,#1858ae);box-shadow:0 10px 22px rgba(30,111,217,.38);transition:transform .15s,box-shadow .15s}
+.login-btn:hover{transform:translateY(-1px);box-shadow:0 14px 28px rgba(30,111,217,.46)}
+.login-btn:disabled{opacity:.75;cursor:wait;transform:none}
+.login-err{background:#fdecea;color:#b3261e;border-radius:12px;padding:9px 13px;margin:0 0 12px;font-size:13px;text-align:right;line-height:1.8}
+.login-foot{margin-top:18px;color:#98a4b3;font-size:12px;line-height:1.9}
+.spin{display:inline-block;width:16px;height:16px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite;vertical-align:middle;margin-left:8px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.modal{max-width:660px}
+.modal .form{grid-template-columns:repeat(2,1fr)}
+.modal .form label:has(textarea),.modal .form label.chk,.modal .form>div:last-child{grid-column:1/-1}
+@media(max-width:800px){
+  .shell{flex-direction:column;padding:12px;gap:12px}
+  nav{flex:none;width:100%;position:static;display:flex;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:6px}
+  nav button{width:auto;flex:none;white-space:nowrap;margin:0}
+  header{padding:10px 14px}.brand .who{display:none}
+  .grid{grid-template-columns:repeat(2,1fr)}
+  .form,.modal .form{grid-template-columns:1fr}
+  .stat b{font-size:20px}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+<script>
+"use strict";
+/* ---------- tiny helpers ---------- */
+const h = (tag, props, ...kids) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v === false || v == null) continue;
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat(Infinity)) if (c != null && c !== false) e.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  return e;
+};
+const toast = (msg, type = "ok") => {
+  const t = h("div", { class: type }, msg);
+  document.getElementById("toast").append(t);
+  setTimeout(() => t.remove(), type === "err" ? 7000 : 3000);
+};
+const fmt = (d) => d ? new Intl.DateTimeFormat("fa-IR-u-ca-persian", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Tehran" }).format(new Date(d)) : "—";
+const fmtDay = (d) => d ? new Intl.DateTimeFormat("fa-IR-u-ca-persian", { dateStyle: "medium", timeZone: "Asia/Tehran" }).format(new Date(d)) : "—";
+const num = (n) => new Intl.NumberFormat("fa-IR").format(n ?? 0);
+
+/* ---------- app icon: a lit house with an arched door = a place to live ---------- */
+const logoSvg = (id) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs>
+<linearGradient id="bg${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b8cf0"/><stop offset="1" stop-color="#123c82"/></linearGradient>
+<linearGradient id="dr${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a6fd6"/><stop offset="1" stop-color="#16488f"/></linearGradient><clipPath id="cp${id}"><rect width="120" height="120" rx="28"/></clipPath></defs>
+<rect width="120" height="120" rx="28" fill="url(#bg${id})"/><g clip-path="url(#cp${id})"><circle cx="98" cy="22" r="40" fill="#fff" opacity=".07"/><circle cx="20" cy="112" r="46" fill="#fff" opacity=".05"/></g>
+<path d="M60 25 L97 54 Q100 57 100 61 V92 Q100 97 95 97 H25 Q20 97 20 92 V61 Q20 57 23 54 Z" fill="#fff"/>
+<path d="M49 97 V76 a11 11 0 0 1 22 0 V97 Z" fill="url(#dr${id})"/>
+<rect x="30" y="65" width="12" height="12" rx="3" fill="#ffd166"/><rect x="78" y="65" width="12" height="12" rx="3" fill="#ffd166"/><circle cx="60" cy="50" r="5" fill="#ffd166"/></svg>`;
+const logo = (size) => { const e = h("span", { class: "logo", style: `width:${size}px;height:${size}px` }); e.innerHTML = logoSvg(Math.random().toString(36).slice(2, 7)); return e; };
+document.head.append(h("link", { rel: "icon", type: "image/svg+xml", href: "data:image/svg+xml," + encodeURIComponent(logoSvg("f")) }));
+const ICON = {
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+};
+const svgIcon = (inner) => { const w = document.createElement("span"); w.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`; return w.firstChild; };
+
+
+const FA = {
+  role: { SUPER_ADMIN: "مدیرکل", SENIOR_ADMIN: "مدیر ارشد", SYSTEM_MANAGER: "مدیر سیستم", DORM_SUPERVISOR: "سرپرست خوابگاه", ATTENDANT: "متصدی", SERVICE_STAFF: "خدمات", COUNSELING: "اداره مشاوره", HEALTH_LIAISON: "رابط بهداشت" },
+  dormGender: { MALE: "پسرانه", FEMALE: "دخترانه" },
+  gender: { MALE: "مرد", FEMALE: "زن" },
+  residency: { NOT_HOUSED: "اسکان‌نیافته", RESIDENT: "ساکن", ON_LEAVE: "در مرخصی", CHECKED_OUT: "تسویه‌شده" },
+  kind: { BED: "تخت", FLOOR: "کف‌خواب", EXTRA: "نفر مازاد" },
+  att: { PRESENT: "حاضر", ABSENT: "غایب", ON_LEAVE: "مرخصی" },
+  concern: { BEHAVIOR_CHANGE: "تغییر رفتار", SELF_HARM: "خودآسیب‌رسانی", OTHER: "سایر" },
+  urgency: { NORMAL: "عادی", URGENT: "فوری" },
+  refStatus: { SUBMITTED: "ارسال‌شده", APPROVED: "تأییدشده", REJECTED: "ردشده", RECEIVED: "دریافت‌شده", SCHEDULED: "زمان‌بندی‌شده", CLOSED: "بسته‌شده" },
+  leaveKind: { DAILY: "روزانه", HOURLY: "ساعتی" },
+  leaveStatus: { PENDING_SUPERVISOR: "منتظر سرپرست", PENDING_MANAGER: "منتظر مدیر سیستم", APPROVED: "تأییدشده", REJECTED: "ردشده", CANCELLED: "لغوشده" },
+  post: { ATTENDANT_DUTY: "تصدی‌گری", FOOD_DISTRIBUTION: "پخش غذا", ATTENDANCE_LIAISON: "رابط حضور و غیاب", HEALTH_LIAISON: "رابط بهداشت" },
+  dormType: { OWNED: "ملکی", RENTED: "استیجاری", SELF_MANAGED_PARTNERSHIP: "خودگردان مشارکتی", SELF_MANAGED: "خودگردان" },
+  employment: { OFFICIAL: "رسمی", CONTRACT: "قراردادی", CONTRACT_ARTICLE4: "قراردادی تبصره ۴", CORPORATE: "شرکتی", HOURLY: "ساعتی", PROJECT: "طرحی" },
+  degree: { BACHELOR: "کارشناسی", MASTER: "کارشناسی ارشد", DOCTORATE_GENERAL: "دکترای عمومی", PHD: "دکترای تخصصی (PhD)" },
+  guardianRel: { FATHER: "پدر", MOTHER: "مادر" },
+  emergencyRel: { FRIEND: "دوست", BROTHER: "برادر", SISTER: "خواهر", RELATIVE: "نزدیکان" },
+  reportCat: { FOOD_RECEIPT: "دریافت غذا", FOOD_DELIVERY: "تحویل اقلام غذایی", OFFICIAL_VISIT: "حضور مسئولین", UNEXPECTED_BEHAVIOR: "رفتار غیرمنتظره", OTHER: "سایر" },
+  followStatus: { OPEN: "بدون اقدام", IN_PROGRESS: "در حال اقدام", RESOLVED: "رفع‌شده" },
+  maintStatus: { SUBMITTED: "ثبت‌شده", APPROVED: "تأییدشده", REJECTED: "ردشده", IN_PROGRESS: "در حال اجرا", FIXED: "رفع‌شده (منتظر تأیید سرپرست)", CLOSED: "بسته‌شده" },
+  repairCat: { BUILDING: "ساختمانی", MECHANICAL: "تأسیسات مکانیکی", ELECTRICAL: "برقی", COOLING_HEATING: "سرمایش و گرمایش" },
+  kindReq: { REPAIR: "تعمیرات", EQUIPMENT: "تجهیزات" },
+  meal: { BREAKFAST: "صبحانه", LUNCH: "ناهار", DINNER: "شام" },
+  reportStatus: { SUBMITTED: "ثبت‌شده", REVIEWED: "بازبینی‌شده", ESCALATED: "ارجاع‌شده به مدیر سیستم" },
+  shiftType: { REGULAR: "عادی", EXTRA: "فوق‌العاده", COVER: "جایگزین" },
+  stat: {
+    SUBMITTED: "ثبت‌شده", APPROVED: "تأییدشده", REJECTED: "ردشده", IN_PROGRESS: "در حال انجام", FIXED: "رفع‌شده (منتظر تأیید)", CLOSED: "بسته‌شده", RECEIVED: "دریافت‌شده", SCHEDULED: "زمان‌بندی‌شده",
+    healthIssuesOpen: "موارد بهداشتی بدون رفع", inspectionsThisWeek: "بررسی‌های این هفته", inspectionsWithIssuesThisWeek: "بررسی‌های دارای مورد (هفته)",
+    dormitories: "خوابگاه‌ها", residents: "ساکنان", definedBeds: "تخت‌های تعریف‌شده", occupiedBeds: "تخت‌های پر", freeBeds: "تخت‌های خالی",
+    pendingLeaves: "مرخصی در انتظار", leavesToDecide: "مرخصی برای تصمیم", openMaintenance: "تعمیرات باز", referralsToDecide: "ارجاع برای تصمیم",
+    staffOnDuty: "کارکنان حاضر", reportsToReview: "گزارش برای بررسی", checklistsToApprove: "چک‌لیست برای تأیید", attendance: "حضور و غیاب امروز",
+    attendanceRecordedToday: "حضور و غیاب امروز", recordedToday: "ثبت‌شده", escalatedReportsLast7Days: "گزارش ارجاعی هفته", universities: "دانشگاه‌ها",
+    activeUsers: "کاربران فعال", students: "دانشجویان", checkedIn: "حاضر هستم", unreadMessages: "پیام خوانده‌نشده", urgentWaiting: "فوری در انتظار",
+    upcomingPsychologistVisits: "حضور روانشناس (آینده)", referrals: "ارجاع‌ها", openMissions: "ماموریت باز", checklistsSubmittedToday: "چک‌لیست امروز",
+  },
+};
+const t = (map, k) => FA[map]?.[k] ?? k ?? "—";
+const opts = (map) => Object.entries(FA[map]).map(([value, label]) => ({ value, label }));
+
+/* ---------- API ---------- */
+let token = localStorage.getItem("mad_token");
+let me = null;
+/* ---------- API + offline layer ---------- */
+class NetError extends Error {}
+const uid = () => (window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2, 14));
+
+async function rawFetch(method, path, body, idemKey) {
+  let res;
+  try {
+    res = await fetch("/api" + path, {
+      method,
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}), ...(idemKey ? { "Idempotency-Key": idemKey } : {}) },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch { throw new NetError("اتصال به سرور برقرار نیست"); }
+  let data = null;
+  try { data = await res.json(); } catch { /* empty body */ }
+  if (!res.ok) {
+    const m = data && data.message;
+    const err = new Error(Array.isArray(m) ? m.join(" | ") : m || "خطا " + res.status);
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+/* IndexedDB: "kv" = cached GET responses per user, "outbox" = changes waiting to be sent */
+const DB = {
+  _db: null,
+  open() {
+    if (!this._db) this._db = new Promise((res, rej) => {
+      const r = indexedDB.open("mad", 1);
+      r.onupgradeneeded = () => { r.result.createObjectStore("kv"); r.result.createObjectStore("outbox", { keyPath: "id" }); };
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+    return this._db;
+  },
+  async tx(store, mode, fn) {
+    const d = await this.open();
+    return new Promise((res, rej) => {
+      const t = d.transaction(store, mode);
+      const out = fn(t.objectStore(store));
+      t.oncomplete = () => res(out && "result" in out ? out.result : undefined);
+      t.onerror = () => rej(t.error);
+      t.onabort = () => rej(t.error);
+    });
+  },
+  get(k) { return this.tx("kv", "readonly", (s) => s.get(k)); },
+  set(k, v) { return this.tx("kv", "readwrite", (s) => { s.put(v, k); }); },
+  all(store) { return this.tx(store, "readonly", (s) => s.getAll()); },
+  put(item) { return this.tx("outbox", "readwrite", (s) => { s.put(item); }); },
+  del(id) { return this.tx("outbox", "readwrite", (s) => { s.delete(id); }); },
+};
+const ckey = (path) => (me ? me.id : "-") + ":" + path;
+const putCache = (path, value) => (me ? DB.set(ckey(path), value).catch(() => {}) : Promise.resolve());
+async function patchCache(path, fn) {
+  if (!me) return;
+  try { const c = await DB.get(ckey(path)); if (c !== undefined && c !== null) await DB.set(ckey(path), fn(c)); } catch { /* ignore */ }
+}
+
+let offline = false;
+const setOffline = (v) => { if (offline !== v) { offline = v; updateStatus(); } };
+
+/* GET: network first, falls back to the last copy saved on this device */
+async function api(method, path, body) {
+  if (method === "GET") {
+    try {
+      const data = await rawFetch("GET", path);
+      setOffline(false);
+      if (me && !path.startsWith("/auth/")) putCache(path, data);
+      return data;
+    } catch (e) {
+      if (e instanceof NetError) {
+        const cached = me ? await DB.get(ckey(path)).catch(() => undefined) : undefined;
+        setOffline(true);
+        if (cached !== undefined) return cached;
+      } else if (e.status === 401 && token) logout();
+      throw e;
+    }
+  }
+  try { const d = await rawFetch(method, path, body); setOffline(false); return d; }
+  catch (e) { if (e.status === 401 && token) logout(); throw e; }
+}
+
+/* Offline-capable change: sent now, or queued on this device and sent automatically when the connection is back */
+async function mutate(method, path, body, label) {
+  const key = uid();
+  try { const data = await rawFetch(method, path, body, key); setOffline(false); return { queued: false, data }; }
+  catch (e) {
+    if (!(e instanceof NetError)) { if (e.status === 401 && token) logout(); throw e; }
+    await DB.put({ id: key, userId: me.id, method, path, body, label, createdAt: Date.now() });
+    setOffline(true);
+    await updateStatus();
+    toast("اینترنت قطع است: تغییر روی این دستگاه ذخیره شد و پس از اتصال خودکار ارسال می‌شود", "warn");
+    return { queued: true };
+  }
+}
+
+let syncing = false;
+async function syncOutbox() {
+  if (syncing || !me || !token) return;
+  syncing = true;
+  let sent = 0;
+  try {
+    const items = (await DB.all("outbox")).filter((i) => i.userId === me.id && !i.failed).sort((a, b) => a.createdAt - b.createdAt);
+    for (const it of items) {
+      try { await rawFetch(it.method, it.path, it.body, it.id); await DB.del(it.id); sent++; }
+      catch (e) {
+        if (e instanceof NetError) { setOffline(true); break; }
+        if (e.status === 401) { toast("نشست شما منقضی شده؛ دوباره وارد شوید تا تغییرات ذخیره‌شده ارسال شوند", "err"); break; }
+        await DB.put({ ...it, failed: true, error: e.message });
+      }
+    }
+    if (sent) setOffline(false);
+  } catch { /* IndexedDB unavailable */ }
+  finally { syncing = false; await updateStatus(); }
+  if (sent) { toast(num(sent) + " تغییر ذخیره‌شده به سرور ارسال شد"); reload(); }
+}
+
+const statusBox = h("span", { class: "sync" });
+async function updateStatus() {
+  let pending = 0, failed = 0;
+  try {
+    const items = me ? (await DB.all("outbox")).filter((i) => i.userId === me.id) : [];
+    pending = items.filter((i) => !i.failed).length;
+    failed = items.filter((i) => i.failed).length;
+  } catch { /* ignore */ }
+  statusBox.innerHTML = "";
+  statusBox.append(offline || !navigator.onLine ? tag("آفلاین", "bad") : tag("آنلاین", "ok"));
+  if (pending) statusBox.append(tag(num(pending) + " تغییر در انتظار ارسال", "warn"), h("button", { class: "btn sm ghost", onclick: () => syncOutbox() }, "ارسال اکنون"));
+  if (failed) statusBox.append(h("button", { class: "btn sm bad", onclick: showFailed }, num(failed) + " تغییر ناموفق"));
+}
+async function showFailed() {
+  const items = (await DB.all("outbox")).filter((i) => i.userId === me.id && i.failed);
+  const overlay = h("div", { class: "overlay" });
+  const close = () => { overlay.remove(); updateStatus(); };
+  overlay.append(h("div", { class: "modal" }, h("h3", {}, "تغییرات ارسال‌نشده"),
+    h("p", { class: "muted" }, "سرور این تغییرات را نپذیرفت. دلیل را ببینید و در صورت نیاز دوباره ثبت کنید."),
+    table([{ h: "عملیات", f: (i) => i.label }, { h: "دلیل", f: (i) => i.error },
+      { h: "", f: (i) => h("button", { class: "btn sm bad", onclick: async (e) => { const tr = e.currentTarget.closest("tr"); await DB.del(i.id); tr.remove(); } }, "حذف") }], items),
+    h("button", { class: "btn ghost", onclick: close }, "بستن")));
+  document.body.append(overlay);
+}
+
+/* After login on a dormitory device: keep today's roster, students and presence available offline */
+async function prefetch() {
+  if (me && me.role === "HEALTH_LIAISON") {
+    for (const p of ["/dashboard", "/dormitories?limit=100", "/health-checks/items"]) { try { await api("GET", p); } catch { /* best effort */ } }
+    return;
+  }
+  if (!me || !me.dormitoryId || !["ATTENDANT", "DORM_SUPERVISOR", "SERVICE_STAFF"].includes(me.role)) return;
+  const jobs = ["/dashboard", "/presence/me"];
+  if (me.role === "ATTENDANT") jobs.push(shiftsPath());
+  if (me.role !== "SERVICE_STAFF") jobs.push(`/dormitories/${me.dormitoryId}/attendance`, "/students?limit=100", "/students?limit=100&status=RESIDENT");
+  for (const p of jobs) { try { await api("GET", p); } catch { /* best effort */ } }
+}
+let bootedFor = null;
+function logout() { token = null; me = null; bootedFor = null; localStorage.removeItem("mad_token"); localStorage.removeItem("mad_me"); render(); }
+
+/* ---------- form / table / modal builders ---------- */
+function formEl(fields, submitLabel, onSubmit) {
+  const form = h("form", { class: "form" });
+  for (const f of fields) {
+    let input;
+    if (f.type === "select") {
+      input = h("select", { name: f.name, required: !!f.required },
+        f.placeholder !== undefined ? h("option", { value: "" }, f.placeholder) : null,
+        (f.options || []).map((o) => h("option", { value: o.value }, o.label)));
+    } else if (f.type === "checkbox") {
+      input = h("input", { type: "checkbox", name: f.name });
+    } else if (f.type === "textarea") {
+      input = h("textarea", { name: f.name, rows: 3, required: !!f.required });
+    } else {
+      input = h("input", { type: f.type || "text", name: f.name, required: !!f.required, placeholder: f.placeholder || "", min: f.min, max: f.max, step: f.step, dir: f.ltr ? "ltr" : null, autocomplete: "off" });
+    }
+    if (f.value !== undefined && f.value !== null) {
+      if (f.type === "checkbox") input.checked = !!f.value;
+      else if (f.type === "textarea") input.textContent = f.value;
+      else input.value = f.value;
+    }
+    form.append(h("label", { class: f.type === "checkbox" ? "chk" : "" }, f.type === "checkbox" ? [input, f.label] : [h("span", {}, f.label + (f.required ? " *" : "")), input]));
+  }
+  form.append(h("div", {}, h("button", { class: "btn", type: "submit" }, submitLabel)));
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const data = {};
+    for (const f of fields) {
+      const el = form.elements[f.name];
+      if (f.type === "checkbox") { if (el.checked) data[f.name] = true; continue; }
+      let v = el.value.trim();
+      if (v === "") continue;
+      if (f.type === "number") v = Number(v);
+      if (f.type === "datetime-local") v = new Date(v).toISOString();
+      data[f.name] = v;
+    }
+    const btn = form.querySelector("button[type=submit]");
+    btn.disabled = true;
+    try { await onSubmit(data, form); } catch (err) { toast(err.message, "err"); } finally { btn.disabled = false; }
+  });
+  return form;
+}
+function modal(title, fields, submitLabel, onSubmit) {
+  const overlay = h("div", { class: "overlay" });
+  const close = () => overlay.remove();
+  const form = formEl(fields, submitLabel, async (d, f) => { await onSubmit(d, f); close(); });
+  overlay.append(h("div", { class: "modal" }, h("h3", {}, title), form, h("button", { class: "btn ghost", type: "button", onclick: close }, "انصراف")));
+  document.body.append(overlay);
+  return form;
+}
+function table(cols, rows, empty = "موردی وجود ندارد") {
+  if (!rows.length) return h("p", { class: "muted" }, empty);
+  return h("div", { class: "tw" }, h("table", {},
+    h("thead", {}, h("tr", {}, cols.map((c) => h("th", {}, c.h)))),
+    h("tbody", {}, rows.map((r) => h("tr", {}, cols.map((c) => h("td", { class: c.h === "" ? "actions" : null }, c.f(r))))))));
+}
+const tag = (text, kind = "") => h("span", { class: "tag " + kind }, text);
+const card = (title, ...kids) => h("div", { class: "card" }, title ? h("h2", {}, title) : null, ...kids);
+const fullName = (o) => o ? `${o.firstName || ""} ${o.lastName || ""}`.trim() : "—";
+const act = (label, fn, cls = "") => h("button", { class: "btn sm " + cls, onclick: async (e) => { const b = e.currentTarget; b.disabled = true; try { await fn(); } catch (err) { toast(err.message, "err"); } finally { b.disabled = false; } } }, label);
+
+/* ---------- pages ---------- */
+let rerender = () => {};
+const reload = () => rerender();
+
+async function pDash(box) {
+  const d = await api("GET", "/dashboard");
+  const stats = [];
+  const walk = (obj, prefix = "") => {
+    for (const [k, v] of Object.entries(obj || {})) {
+      if (v && typeof v === "object" && !Array.isArray(v)) walk(v, (t("stat", k)) + " · ");
+      else if (Array.isArray(v)) stats.push([prefix + t("stat", k), v.length]);
+      else stats.push([prefix + t("stat", k), typeof v === "boolean" ? (v ? "بله" : "خیر") : v]);
+    }
+  };
+  walk(d);
+  if (d && d.healthIssuesOpen > 0 && ["DORM_SUPERVISOR", "SYSTEM_MANAGER", "SENIOR_ADMIN", "SUPER_ADMIN", "HEALTH_LIAISON"].includes(me.role)) {
+    box.append(h("div", { class: "card", style: "border-color:var(--bad);background:#fff5f4" },
+      h("div", { class: "row", style: "justify-content:space-between" },
+        h("b", { style: "color:var(--bad)" }, "⚠ " + num(d.healthIssuesOpen) + " مورد بهداشتی هنوز رفع نشده است"),
+        act("مشاهده و اقدام", () => { current = "halerts"; render(); }, "bad"))));
+  }
+  box.append(card("داشبورد", h("div", { class: "grid" }, stats.map(([k, v]) => h("div", { class: "stat" }, h("b", {}, typeof v === "number" ? num(v) : v ?? "—"), h("span", {}, k))))));
+}
+
+async function pUnis(box) {
+  const unis = await api("GET", "/universities");
+  box.append(card("دانشگاه جدید", formEl([
+    { name: "name", label: "نام دانشگاه", required: true },
+    { name: "code", label: "کد (انگلیسی کوچک)", required: true, ltr: true, placeholder: "sample" },
+  ], "ساخت دانشگاه", async (d) => { await api("POST", "/universities", d); toast("دانشگاه ساخته شد"); reload(); })));
+  box.append(card("دانشگاه‌ها", table([
+    { h: "نام", f: (u) => u.name }, { h: "کد", f: (u) => u.code },
+    { h: "وضعیت", f: (u) => tag(u.isActive ? "فعال" : "غیرفعال", u.isActive ? "ok" : "bad") },
+    { h: "", f: (u) => act("ساخت مدیر ارشد", () => seniorModal(u)) },
+  ], unis)));
+}
+function seniorModal(u) {
+  modal("مدیر ارشد " + u.name, userFields(false), "ساخت", async (d) => {
+    await api("POST", "/users", { ...d, role: "SENIOR_ADMIN", universityId: u.id });
+    toast("مدیر ارشد ساخته شد");
+  });
+}
+async function pSystem(box) {
+  const s = await api("GET", "/system/status");
+  box.append(card("وضعیت سرویس‌ها", h("pre", {}, JSON.stringify(s, null, 2))));
+}
+
+const CREATABLE = {
+  SENIOR_ADMIN: ["SYSTEM_MANAGER"],
+  SYSTEM_MANAGER: ["DORM_SUPERVISOR", "ATTENDANT", "SERVICE_STAFF", "COUNSELING", "HEALTH_LIAISON"],
+  DORM_SUPERVISOR: ["ATTENDANT", "SERVICE_STAFF"],
+};
+function userFields() {
+  return [
+    { name: "username", label: "کد ملی (نام کاربری)", required: true, ltr: true },
+    { name: "password", label: "رمز عبور (حداقل ۶ کاراکتر)", required: true, ltr: true },
+    { name: "firstName", label: "نام", required: true },
+    { name: "lastName", label: "نام خانوادگی", required: true },
+    { name: "phone", label: "موبایل", ltr: true, placeholder: "09123456789" },
+  ];
+}
+function editUserModal(u, roles) {
+  modal("ویرایش " + fullName(u), [
+    { name: "firstName", label: "نام", required: true, value: u.firstName },
+    { name: "lastName", label: "نام خانوادگی", required: true, value: u.lastName },
+    { name: "username", label: "کد ملی (نام کاربری)", required: true, ltr: true, value: u.username },
+    { name: "phone", label: "موبایل", ltr: true, value: u.phone || "" },
+    { name: "employmentType", label: "نوع استخدام", type: "select", placeholder: "—", options: opts("employment"), value: u.employmentType || "" },
+    { name: "role", label: "نقش", type: "select", required: true, options: [...new Set([u.role, ...roles])].map((r) => ({ value: r, label: t("role", r) })), value: u.role },
+    { name: "isStudentWorker", label: "کار دانشجویی (متصدی / رابط بهداشت)", type: "checkbox", value: u.isStudentWorker },
+    { name: "workerPost", label: "پست کار دانشجویی", type: "select", placeholder: "—", options: opts("post"), value: u.workerPost || "" },
+  ], "ذخیره", async (d, f) => {
+    d.isStudentWorker = f.elements.isStudentWorker.checked;
+    await api("PATCH", `/users/${u.id}`, d);
+    toast("ذخیره شد"); reload();
+  });
+}
+async function pUsers(box) {
+  const roles = CREATABLE[me.role] || [];
+  const dorms = me.role === "SYSTEM_MANAGER" ? (await api("GET", "/dormitories?limit=100")).items : [];
+  const dormName = Object.fromEntries(dorms.map((d) => [d.id, d.name]));
+  const fields = [...userFields(),
+    { name: "role", label: "نقش", type: "select", required: true, options: roles.map((r) => ({ value: r, label: t("role", r) })) },
+    { name: "employmentType", label: "نوع استخدام (سرپرست، متصدی، خدمات)", type: "select", placeholder: "—", options: opts("employment") }];
+  if (me.role === "SYSTEM_MANAGER") fields.push({ name: "dormitoryId", label: "خوابگاه (اختیاری)", type: "select", placeholder: "—", options: dorms.map((d) => ({ value: d.id, label: d.name })) });
+  if (roles.includes("ATTENDANT") || roles.includes("HEALTH_LIAISON")) {
+    fields.push({ name: "isStudentWorker", label: "کار دانشجویی (متصدی / رابط بهداشت)", type: "checkbox" });
+    fields.push({ name: "workerPost", label: "پست کار دانشجویی", type: "select", placeholder: "—", options: opts("post") });
+  }
+  box.append(card("کاربر جدید", formEl(fields, "ساخت کاربر", async (d) => {
+    if (!["ATTENDANT", "HEALTH_LIAISON"].includes(d.role)) { delete d.isStudentWorker; delete d.workerPost; }
+    await api("POST", "/users", d);
+    toast("کاربر ساخته شد"); reload();
+  })));
+  const list = await api("GET", "/users?limit=100");
+  const bound = ["DORM_SUPERVISOR", "ATTENDANT", "SERVICE_STAFF"];
+  box.append(card("کاربران", table([
+    { h: "نام", f: (u) => fullName(u) }, { h: "کد ملی", f: (u) => u.username },
+    { h: "نقش", f: (u) => t("role", u.role) + (u.isStudentWorker ? " (کار دانشجویی: " + t("post", u.workerPost) + ")" : "") },
+    { h: "نوع استخدام", f: (u) => u.employmentType ? t("employment", u.employmentType) : "—" },
+    { h: "موبایل", f: (u) => u.phone || "—" },
+    { h: "خوابگاه", f: (u) => u.dormitoryId ? (dormName[u.dormitoryId] || "اختصاص‌یافته") : "—" },
+    { h: "وضعیت", f: (u) => tag(u.isActive ? "فعال" : "غیرفعال", u.isActive ? "ok" : "bad") },
+    { h: "", f: (u) => {
+      const parts = [];
+      if (u.id !== me.id && roles.includes(u.role)) {
+        parts.push(act("ویرایش", () => editUserModal(u, roles)));
+        parts.push(act("ریست رمز", () => modal("رمز جدید برای " + fullName(u), [{ name: "newPassword", label: "رمز جدید (حداقل ۶ کاراکتر)", required: true, ltr: true }], "ثبت",
+          async (d) => { await api("POST", `/users/${u.id}/reset-password`, d); toast("رمز تغییر کرد و قفل حساب (در صورت وجود) برداشته شد"); }), "ghost"));
+        parts.push(act(u.isActive ? "غیرفعال" : "فعال", async () => { await api("PATCH", `/users/${u.id}/active`, { isActive: !u.isActive }); reload(); }, u.isActive ? "bad" : "ok"));
+        if (bound.includes(u.role)) {
+          if (me.role === "SYSTEM_MANAGER") parts.push(act("تغییر خوابگاه", () => modal("خوابگاه " + fullName(u),
+            [{ name: "dormitoryId", label: "خوابگاه", type: "select", placeholder: "بدون خوابگاه", options: dorms.map((d) => ({ value: d.id, label: d.name })), value: u.dormitoryId || "" }], "ثبت",
+            async (d) => { await api("PATCH", `/users/${u.id}/dormitory`, { dormitoryId: d.dormitoryId ?? null }); toast("ثبت شد"); reload(); })));
+          else if (!u.dormitoryId) parts.push(act("اتصال به خوابگاه من", async () => { await api("PATCH", `/users/${u.id}/dormitory`, { dormitoryId: me.dormitoryId }); reload(); }, "ok"));
+          else parts.push(act("جدا کردن", async () => { await api("PATCH", `/users/${u.id}/dormitory`, { dormitoryId: null }); reload(); }, "warn"));
+        }
+      }
+      return parts;
+    } },
+  ], list.items)));
+}
+
+function dormFields(d) {
+  const v = (k) => (d ? d[k] ?? "" : undefined);
+  return [
+    { name: "name", label: "نام خوابگاه", required: true, value: v("name") },
+    { name: "ownershipType", label: "نوع خوابگاه", type: "select", required: true, placeholder: "انتخاب", options: opts("dormType"), value: v("ownershipType") },
+    ...(d ? [] : [{ name: "gender", label: "پسرانه / دخترانه", type: "select", required: true, options: opts("dormGender") }]),
+    { name: "nominalCapacity", label: "ظرفیت اسمی", type: "number", required: true, min: 0, value: v("nominalCapacity") },
+    { name: "address", label: "آدرس", value: v("address") },
+    { name: "latitude", label: "عرض جغرافیایی", type: "number", step: "any", ltr: true, value: v("latitude") },
+    { name: "longitude", label: "طول جغرافیایی", type: "number", step: "any", ltr: true, value: v("longitude") },
+    { name: "landline", label: "تلفن ثابت", ltr: true, value: v("landline") },
+  ];
+}
+function locationButton(form) {
+  return h("button", { type: "button", class: "btn ghost sm", onclick: () => {
+    if (!navigator.geolocation) return toast("مرورگر از موقعیت‌یابی پشتیبانی نمی‌کند", "err");
+    navigator.geolocation.getCurrentPosition(
+      (p) => { form.elements.latitude.value = p.coords.latitude.toFixed(6); form.elements.longitude.value = p.coords.longitude.toFixed(6); toast("موقعیت این دستگاه ثبت شد"); },
+      () => toast("دسترسی به موقعیت داده نشد", "err"), { enableHighAccuracy: true, timeout: 15000 });
+  } }, "گرفتن موقعیت از همین دستگاه");
+}
+async function pDorms(box) {
+  const form = formEl(dormFields(), "ساخت خوابگاه", async (d) => { await api("POST", "/dormitories", d); toast("خوابگاه ساخته شد"); reload(); });
+  box.append(card("خوابگاه جدید", form, h("div", { style: "margin-top:10px" }, locationButton(form))));
+  const list = await api("GET", "/dormitories?limit=100");
+  box.append(card("خوابگاه‌ها", table([
+    { h: "نام", f: (d) => d.name }, { h: "نوع", f: (d) => t("dormType", d.ownershipType) }, { h: "پسرانه/دخترانه", f: (d) => t("dormGender", d.gender) },
+    { h: "ظرفیت اسمی", f: (d) => num(d.nominalCapacity) }, { h: "ساختمان‌ها", f: (d) => num(d._count?.buildings) },
+    { h: "آدرس", f: (d) => d.address || "—" },
+    { h: "موقعیت", f: (d) => d.latitude != null && d.longitude != null ? h("a", { href: `https://www.openstreetmap.org/?mlat=${d.latitude}&mlon=${d.longitude}#map=17/${d.latitude}/${d.longitude}`, target: "_blank", rel: "noopener" }, "نمایش روی نقشه") : "—" },
+    { h: "", f: (d) => [
+      act("ویرایش", () => { const f = modal("ویرایش " + d.name, dormFields(d), "ذخیره", async (x) => { await api("PATCH", `/dormitories/${d.id}`, x); toast("ذخیره شد"); reload(); }); f.append(locationButton(f)); }),
+      act("خلاصه ظرفیت", async () => {
+        const r = await api("GET", `/dormitories/${d.id}/summary`);
+        toast(`${d.name}: ${num(r.buildings)} ساختمان، ${num(r.rooms)} اتاق، تخت تعریف‌شده ${num(r.definedBedCapacity)} از ظرفیت اسمی ${num(r.nominalCapacity)}`);
+      }, "ghost"),
+    ] },
+  ], list.items)));
+}
+async function pVacancy(box) {
+  const rows = await api("GET", "/reports/vacancy");
+  box.append(card("ظرفیت خالی خوابگاه‌ها", table([
+    { h: "خوابگاه", f: (r) => r.name }, { h: "نوع", f: (r) => t("dormGender", r.gender) },
+    { h: "ظرفیت اسمی", f: (r) => num(r.nominalCapacity) }, { h: "تخت تعریف‌شده", f: (r) => num(r.definedBeds) },
+    { h: "تخت پر", f: (r) => num(r.occupiedBeds) }, { h: "تخت خالی", f: (r) => tag(num(r.freeBeds), r.freeBeds > 0 ? "ok" : "bad") },
+    { h: "کف‌خواب", f: (r) => num(r.floorSleepers) }, { h: "نفر مازاد", f: (r) => num(r.extra) },
+  ], rows)));
+}
+
+async function pStructure(box) {
+  const dormId = me.dormitoryId;
+  if (!dormId) return box.append(card("", h("p", {}, "شما هنوز به خوابگاهی متصل نشده‌اید. از مدیر سیستم بخواهید شما را به خوابگاه وصل کند.")));
+  box.append(card("ساختمان جدید", formEl([{ name: "name", label: "نام ساختمان", required: true }], "ساخت ساختمان",
+    async (d) => { await api("POST", `/dormitories/${dormId}/buildings`, d); toast("ساختمان ساخته شد"); reload(); })));
+  const blds = await api("GET", `/dormitories/${dormId}/buildings`);
+  if (!blds.length) box.append(card("", h("p", { class: "muted" }, "هنوز ساختمانی تعریف نشده است.")));
+  for (const b of blds) {
+    const rooms = await api("GET", `/buildings/${b.id}/rooms`);
+    box.append(card("ساختمان " + b.name,
+      h("p", { class: "muted" }, `${num(rooms.length)} اتاق`),
+      table([
+        { h: "اتاق", f: (r) => r.number }, { h: "طبقه", f: (r) => r.floor ?? "—" },
+        { h: "ظرفیت (تخت)", f: (r) => num(r.capacity) },
+      ], rooms, "اتاقی تعریف نشده است."),
+      h("h3", { style: "margin-top:16px" }, "ساخت دسته‌ای اتاق"),
+      formEl([
+        { name: "from", label: "از شماره", type: "number", required: true, min: 0 },
+        { name: "to", label: "تا شماره", type: "number", required: true, min: 0 },
+        { name: "capacity", label: "تعداد تخت در هر اتاق", type: "number", required: true, min: 1, max: 20 },
+        { name: "floor", label: "طبقه", type: "number" },
+      ], "ساخت اتاق‌ها", async (d) => { const r = await api("POST", `/buildings/${b.id}/rooms/bulk`, d); toast(num(r.created) + " اتاق ساخته شد"); reload(); })));
+  }
+}
+
+async function loadRooms() {
+  const blds = await api("GET", `/dormitories/${me.dormitoryId}/buildings`);
+  const rooms = [];
+  for (const b of blds) for (const r of await api("GET", `/buildings/${b.id}/rooms`)) if (r.type === "RESIDENTIAL") rooms.push({ ...r, building: b.name });
+  return rooms;
+}
+async function placeModal(s) {
+  const rooms = await loadRooms();
+  const form = modal("اسکان " + fullName(s), [
+    { name: "roomId", label: "اتاق", type: "select", required: true, placeholder: "انتخاب اتاق", options: rooms.map((r) => ({ value: r.id, label: `${r.building} - اتاق ${r.number} (${num(r.capacity)} تخت)` })) },
+    { name: "kind", label: "نوع جایگاه", type: "select", required: true, options: opts("kind") },
+    { name: "bedId", label: "تخت", type: "select", placeholder: "—", options: [] },
+  ], "ثبت", async (d) => {
+    const body = { roomId: d.roomId, kind: d.kind, ...(d.bedId ? { bedId: d.bedId } : {}) };
+    await api("POST", `/students/${s.id}/${["RESIDENT", "ON_LEAVE"].includes(s.status) ? "move" : "assign"}`, body);
+    toast("ثبت شد"); reload();
+  });
+  const refresh = async () => {
+    const bed = form.elements.bedId;
+    bed.innerHTML = "";
+    const roomId = form.elements.roomId.value;
+    if (form.elements.kind.value !== "BED" || !roomId) { bed.disabled = true; bed.append(h("option", { value: "" }, "—")); return; }
+    bed.disabled = false;
+    const res = await api("GET", `/rooms/${roomId}/residents`);
+    const used = new Set(res.residents.map((r) => r.bed?.label).filter(Boolean));
+    const room = rooms.find((r) => r.id === roomId);
+    const free = (room.beds || []).filter((b) => !used.has(b.label));
+    bed.append(h("option", { value: "" }, free.length ? "انتخاب تخت" : "تخت خالی ندارد"), free.map((b) => h("option", { value: b.id }, "تخت " + b.label)));
+  };
+  form.elements.roomId.addEventListener("change", () => refresh().catch((e) => toast(e.message, "err")));
+  form.elements.kind.addEventListener("change", () => refresh().catch((e) => toast(e.message, "err")));
+  refresh();
+}
+function studentFields(st) {
+  const v = (k) => (st ? st[k] ?? "" : undefined);
+  return [
+    ...(st ? [] : [{ name: "nationalId", label: "کد ملی", required: true, ltr: true }]),
+    { name: "firstName", label: "نام", required: true, value: v("firstName") },
+    { name: "lastName", label: "نام خانوادگی", required: true, value: v("lastName") },
+    { name: "phone", label: "موبایل دانشجو", required: true, ltr: true, placeholder: "09123456789", value: v("phone") },
+    { name: "degree", label: "مقطع", type: "select", placeholder: "—", options: opts("degree"), value: v("degree") },
+    { name: "major", label: "رشته", value: v("major") },
+    { name: "studentNumber", label: "شماره دانشجویی", ltr: true, value: v("studentNumber") },
+    { name: "landline", label: "تلفن ثابت", ltr: true, value: v("landline") },
+    { name: "guardianRelation", label: "اولیاء (پدر / مادر)", type: "select", placeholder: "—", options: opts("guardianRel"), value: v("guardianRelation") },
+    { name: "guardianPhone", label: "موبایل اولیاء", ltr: true, value: v("guardianPhone") },
+    { name: "emergencyContactRelation", label: "تماس ضروری (نسبت)", type: "select", placeholder: "—", options: opts("emergencyRel"), value: v("emergencyContactRelation") },
+    { name: "emergencyContactPhone", label: "شماره تماس ضروری", ltr: true, value: v("emergencyContactPhone") },
+  ];
+}
+async function pStudents(box) {
+  box.append(card("دانشجوی جدید", h("p", { class: "muted" }, "پسرانه یا دخترانه بودن دانشجو خودکار از نوع خوابگاه شما تعیین می‌شود."),
+    formEl(studentFields(), "ثبت دانشجو", async (d) => { await api("POST", "/students", d); toast("دانشجو ثبت شد"); reload(); })));
+  const list = await api("GET", "/students?limit=100");
+  box.append(card("دانشجویان", table([
+    { h: "نام", f: (s) => fullName(s) }, { h: "کد ملی", f: (s) => s.nationalId }, { h: "موبایل", f: (s) => s.phone || "—" },
+    { h: "مقطع", f: (s) => s.degree ? t("degree", s.degree) : "—" },
+    { h: "وضعیت", f: (s) => tag(t("residency", s.status), s.status === "RESIDENT" ? "ok" : s.status === "ON_LEAVE" ? "warn" : "") },
+    { h: "جایگاه", f: (s) => s.current ? `${s.current.room.building.name} / ${s.current.room.number}${s.current.bed ? " / تخت " + s.current.bed.label : ""} (${t("kind", s.current.kind)})` : "—" },
+    { h: "", f: (s) => {
+      const housed = ["RESIDENT", "ON_LEAVE"].includes(s.status);
+      return [
+        act("ویرایش", () => modal("ویرایش " + fullName(s), studentFields(s), "ذخیره", async (d) => { await api("PATCH", `/students/${s.id}`, d); toast("ذخیره شد"); reload(); })),
+        act(housed ? "جابجایی" : "اسکان", () => placeModal(s)),
+        housed ? act("تسویه", async () => { if (confirm("تسویه‌ی این دانشجو انجام شود؟")) { await api("POST", `/students/${s.id}/checkout`, {}); reload(); } }, "bad") : null,
+        s.status === "RESIDENT" ? act("مرخصی", async () => { await api("POST", `/students/${s.id}/leave`, {}); reload(); }, "warn") : null,
+        s.status === "ON_LEAVE" ? act("بازگشت", async () => { await api("POST", `/students/${s.id}/return`); reload(); }, "ok") : null,
+      ];
+    } },
+  ], list.items)));
+}
+
+async function pAttendance(box) {
+  if (!me.dormitoryId) return box.append(card("", h("p", {}, "به خوابگاهی متصل نشده‌اید.")));
+  const dateIn = h("input", { type: "date", style: "max-width:190px" });
+  const area = h("div");
+  const load = async () => {
+    area.innerHTML = "";
+    const path = `/dormitories/${me.dormitoryId}/attendance${dateIn.value ? "?date=" + dateIn.value : ""}`;
+    const r = await api("GET", path);
+    if (!dateIn.value) dateIn.value = r.date;
+    const marks = new Map(r.items.filter((i) => i.status).map((i) => [i.studentId, i.status]));
+    const btns = new Map();
+    const counter = h("b", {});
+    const refresh = () => { counter.textContent = `${num(marks.size)} از ${num(r.items.length)} نفر مشخص شده`; };
+    const paint = (id) => { for (const [st, b] of btns.get(id)) b.className = marks.get(id) === st ? "on " + st : ""; refresh(); };
+    const setMany = (items, st) => { for (const i of items) { marks.set(i.studentId, st); paint(i.studentId); } };
+
+    const groups = new Map();
+    for (const i of r.items) { const k = `${i.building} / اتاق ${i.room}`; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(i); }
+    if (!r.items.length) area.append(h("p", { class: "muted" }, "ساکنی در این خوابگاه ثبت نشده است."));
+    for (const [title, items] of groups) {
+      area.append(card(null,
+        h("div", { class: "row", style: "justify-content:space-between;margin-bottom:6px" }, h("h3", { style: "margin:0" }, title), act("همه‌ی این اتاق حاضر", () => setMany(items, "PRESENT"), "ghost")),
+        items.map((i) => {
+          const m = new Map(); btns.set(i.studentId, m);
+          const seg = h("div", { class: "seg big" }, ["PRESENT", "ABSENT", "ON_LEAVE"].map((st) => {
+            const b = h("button", { type: "button", onclick: () => { marks.set(i.studentId, st); paint(i.studentId); } }, t("att", st));
+            m.set(st, b); return b;
+          }));
+          return h("div", { class: "arow" }, h("span", { class: "aname" }, fullName(i), i.kind !== "BED" ? " (" + t("kind", i.kind) + ")" : i.bed ? " — تخت " + i.bed : ""), seg);
+        })));
+    }
+    area.append(h("div", { class: "savebar" }, counter,
+      act("همه‌ی ساکنان حاضر", () => setMany(r.items, "PRESENT"), "ghost"),
+      act("ثبت حضور و غیاب", async () => {
+        const records = [...marks].map(([studentId, status]) => ({ studentId, status }));
+        if (!records.length) throw new Error("هنوز وضعیت هیچ‌کس مشخص نشده است");
+        const res = await mutate("PUT", `/dormitories/${me.dormitoryId}/attendance`, { date: dateIn.value, records }, `حضور و غیاب ${dateIn.value} (${num(records.length)} نفر)`);
+        if (res.queued) {
+          await patchCache(path, (c) => { const mm = new Map(records.map((x) => [x.studentId, x.status])); for (const i of c.items) if (mm.has(i.studentId)) { i.status = mm.get(i.studentId); i.recorded = true; } c.recorded = c.items.filter((i) => i.recorded).length; return c; });
+        } else toast("حضور و غیاب ثبت شد");
+        await load();
+      }, "ok")));
+    for (const id of btns.keys()) paint(id);
+    refresh();
+  };
+  box.append(card("حضور و غیاب", h("div", { class: "row" }, h("label", {}, "تاریخ: "), dateIn, act("نمایش", load, "ghost"))), area);
+  await load();
+}
+
+async function pAttendView(box) {
+  const dorms = (await api("GET", "/dormitories?limit=100")).items;
+  const sel = h("select", { style: "max-width:260px" }, dorms.map((d) => h("option", { value: d.id }, d.name)));
+  const dateIn = h("input", { type: "date", style: "max-width:190px" });
+  const area = h("div");
+  const load = async () => {
+    area.innerHTML = "";
+    if (!sel.value) return;
+    const r = await api("GET", `/dormitories/${sel.value}/attendance${dateIn.value ? "?date=" + dateIn.value : ""}`);
+    if (!dateIn.value) dateIn.value = r.date;
+    const c = { PRESENT: 0, ABSENT: 0, ON_LEAVE: 0, none: 0 };
+    for (const i of r.items) c[i.status || "none"]++;
+    area.append(h("div", { class: "grid", style: "margin:12px 0" }, [["حاضر", c.PRESENT], ["غایب", c.ABSENT], ["مرخصی", c.ON_LEAVE], ["ثبت‌نشده", c.none], ["کل ساکنان", r.total]].map(([k, v]) => h("div", { class: "stat" }, h("b", {}, num(v)), h("span", {}, k)))));
+    area.append(table([
+      { h: "ساختمان / اتاق", f: (i) => `${i.building} / ${i.room}` }, { h: "نام", f: (i) => fullName(i) },
+      { h: "وضعیت", f: (i) => i.status ? tag(t("att", i.status), i.status === "PRESENT" ? "ok" : i.status === "ABSENT" ? "bad" : "warn") : tag("ثبت‌نشده") },
+    ], r.items, "ساکنی ثبت نشده است."));
+    const absent = await api("GET", `/reports/absent-students?dormitoryId=${sel.value}`);
+    area.append(h("h3", { style: "margin-top:20px" }, "دانشجویان غایب بیش از دو هفته"), table([
+      { h: "نام", f: (a) => fullName(a) }, { h: "کد ملی", f: (a) => a.nationalId }, { h: "موبایل", f: (a) => a.phone || "—" },
+      { h: "اتاق", f: (a) => `${a.building} / ${a.room}` }, { h: "روز غیبت", f: (a) => tag(num(a.absentDays), "bad") }, { h: "مرخصی", f: (a) => a.onLeave ? "بله" : "خیر" },
+    ], absent, "موردی وجود ندارد."));
+  };
+  sel.addEventListener("change", () => { dateIn.value = ""; load().catch((e) => toast(e.message, "err")); });
+  box.append(card("مشاهده حضور و غیاب", h("div", { class: "row" }, h("label", {}, "خوابگاه: "), sel, h("label", {}, "تاریخ: "), dateIn, act("نمایش", load, "ghost")), area));
+  await load();
+}
+
+async function pEscalated(box) {
+  const r = await api("GET", "/reports/dormitory?limit=100");
+  const filter = h("select", { style: "max-width:200px" }, h("option", { value: "week" }, "هفته اخیر"), h("option", { value: "all" }, "همه"));
+  const area = h("div");
+  const draw = () => {
+    area.innerHTML = "";
+    const since = Date.now() - 7 * 86400000;
+    const rows = r.items.filter((x) => filter.value === "all" || new Date(x.escalatedAt || x.occurredAt).getTime() >= since);
+    area.append(table([
+      { h: "زمان رویداد", f: (x) => fmt(x.occurredAt) }, { h: "ارجاع", f: (x) => fmt(x.escalatedAt) },
+      { h: "نوع", f: (x) => t("reportCat", x.category) }, { h: "عنوان", f: (x) => x.title },
+      { h: "شرح", f: (x) => h("span", { title: x.description || "" }, (x.description || "—").slice(0, 60)) },
+      { h: "ثبت‌کننده", f: (x) => fullName(x.author) }, { h: "یادداشت سرپرست", f: (x) => x.reviewNote || "—" },
+    ], rows, "گزارش ارجاعی‌ای وجود ندارد."));
+  };
+  filter.addEventListener("change", draw);
+  box.append(card("گزارش‌های ارجاعی سرپرستان", h("div", { class: "row", style: "margin-bottom:10px" }, h("label", {}, "بازه: "), filter), area));
+  draw();
+}
+
+async function pReferrals(box) {
+  const canCreate = ["ATTENDANT", "DORM_SUPERVISOR"].includes(me.role);
+  if (canCreate) {
+    const students = (await api("GET", "/students?limit=100&status=RESIDENT")).items;
+    box.append(card("ارجاع جدید به اداره مشاوره", formEl([
+      { name: "studentId", label: "دانشجو", type: "select", required: true, placeholder: "انتخاب", options: students.map((s) => ({ value: s.id, label: fullName(s) })) },
+      { name: "concernType", label: "نوع نگرانی", type: "select", required: true, options: opts("concern") },
+      { name: "urgency", label: "فوریت", type: "select", options: opts("urgency") },
+      { name: "narrative", label: "شرح ماوقع", type: "textarea", required: true },
+    ], "ارسال ارجاع", async (d) => { const r = await mutate("POST", "/referrals", d, "ارجاع به مشاوره"); if (!r.queued) toast("ارجاع ثبت شد"); reload(); })));
+  }
+  const list = await api("GET", "/referrals?limit=50");
+  box.append(card("ارجاع‌ها", table([
+    { h: "تاریخ", f: (r) => fmt(r.createdAt) },
+    { h: "دانشجو", f: (r) => r.student ? fullName(r.student) : "—" },
+    { h: "خوابگاه", f: (r) => r.dormitoryName || "—" },
+    { h: "نگرانی", f: (r) => t("concern", r.concernType) },
+    { h: "فوریت", f: (r) => tag(t("urgency", r.urgency), r.urgency === "URGENT" ? "bad" : "") },
+    { h: "وضعیت", f: (r) => tag(t("refStatus", r.status), r.status === "CLOSED" ? "ok" : r.status === "REJECTED" ? "bad" : "warn") },
+    { h: "شرح", f: (r) => h("span", { title: r.narrative }, r.narrative.length > 40 ? r.narrative.slice(0, 40) + "…" : r.narrative) },
+    { h: "", f: (r) => {
+      const p = [];
+      if (me.role === "DORM_SUPERVISOR" && r.status === "SUBMITTED") {
+        p.push(act("تأیید", async () => { await api("POST", `/referrals/${r.id}/decision`, { approve: true }); reload(); }, "ok"));
+        if (r.urgency !== "URGENT") p.push(act("رد", () => modal("رد ارجاع", [{ name: "note", label: "دلیل", type: "textarea" }], "ثبت رد", async (d) => { await api("POST", `/referrals/${r.id}/decision`, { approve: false, ...d }); reload(); }), "bad"));
+      }
+      if (me.role === "COUNSELING") {
+        if (r.status === "APPROVED" || (r.status === "SUBMITTED" && r.urgency === "URGENT")) p.push(act("دریافت", async () => { await api("POST", `/referrals/${r.id}/receive`); reload(); }, "ok"));
+        if (["RECEIVED", "SCHEDULED"].includes(r.status)) {
+          p.push(act("زمان‌بندی", () => modal("زمان جلسه", [{ name: "scheduledAt", label: "زمان", type: "datetime-local", required: true }, { name: "note", label: "یادداشت", type: "textarea" }], "ثبت", async (d) => { await api("POST", `/referrals/${r.id}/schedule`, d); reload(); })));
+          p.push(act("ختم", () => modal("ختم پرونده", [{ name: "note", label: "یادداشت", type: "textarea" }], "ختم", async (d) => { await api("POST", `/referrals/${r.id}/close`, d); reload(); }), "warn"));
+        }
+      }
+      return p;
+    } },
+  ], list.items)));
+}
+
+async function pPsych(box) {
+  const dorms = (await api("GET", "/dormitories?limit=100")).items;
+  box.append(card("برنامه حضور روانشناس", formEl([
+    { name: "dormitoryId", label: "خوابگاه", type: "select", required: true, placeholder: "انتخاب", options: dorms.map((d) => ({ value: d.id, label: d.name })) },
+    { name: "psychologistName", label: "نام روانشناس", required: true },
+    { name: "startsAt", label: "شروع", type: "datetime-local", required: true },
+    { name: "endsAt", label: "پایان", type: "datetime-local", required: true },
+    { name: "location", label: "محل (مثلاً اتاق مشاوره)" },
+  ], "ثبت برنامه", async (d) => { await api("POST", "/counseling/schedules", d); toast("ثبت شد"); reload(); })));
+  const list = await api("GET", "/counseling/schedules");
+  box.append(card("برنامه‌های پیش‌رو", table([
+    { h: "خوابگاه", f: (s) => s.dormitory?.name }, { h: "روانشناس", f: (s) => s.psychologistName },
+    { h: "از", f: (s) => fmt(s.startsAt) }, { h: "تا", f: (s) => fmt(s.endsAt) }, { h: "محل", f: (s) => s.location || "—" },
+    { h: "", f: (s) => act("حذف", async () => { await api("DELETE", `/counseling/schedules/${s.id}`); reload(); }, "bad") },
+  ], list)));
+}
+
+async function pLeaves(box) {
+  if (["ATTENDANT", "SERVICE_STAFF", "DORM_SUPERVISOR"].includes(me.role)) {
+    box.append(card("درخواست مرخصی", formEl([
+      { name: "kind", label: "نوع", type: "select", required: true, options: opts("leaveKind") },
+      { name: "startsAt", label: "از", type: "datetime-local", required: true },
+      { name: "endsAt", label: "تا", type: "datetime-local", required: true },
+      { name: "reason", label: "دلیل" },
+    ], "ارسال درخواست", async (d) => { await api("POST", "/leaves", d); toast("درخواست ثبت شد"); reload(); })));
+  }
+  const list = await api("GET", "/leaves?limit=50");
+  const myStep = me.role === "SYSTEM_MANAGER" ? "PENDING_MANAGER" : me.role === "DORM_SUPERVISOR" ? "PENDING_SUPERVISOR" : null;
+  box.append(card("مرخصی‌ها", table([
+    { h: "درخواست‌دهنده", f: (l) => fullName(l.requester) }, { h: "نقش", f: (l) => t("role", l.requester?.role) },
+    { h: "نوع", f: (l) => t("leaveKind", l.kind) }, { h: "از", f: (l) => fmt(l.startsAt) }, { h: "تا", f: (l) => fmt(l.endsAt) },
+    { h: "دلیل", f: (l) => l.reason || "—" },
+    { h: "وضعیت", f: (l) => tag(t("leaveStatus", l.status), l.status === "APPROVED" ? "ok" : l.status === "REJECTED" ? "bad" : "warn") },
+    { h: "", f: (l) => {
+      const p = [];
+      if (myStep && l.status === myStep && l.requester?.id !== me.id) {
+        p.push(act("تأیید", async () => { await api("POST", `/leaves/${l.id}/decision`, { approve: true }); reload(); }, "ok"));
+        p.push(act("رد", async () => { await api("POST", `/leaves/${l.id}/decision`, { approve: false }); reload(); }, "bad"));
+      }
+      if (l.requester?.id === me.id && ["PENDING_SUPERVISOR", "PENDING_MANAGER", "APPROVED"].includes(l.status)) p.push(act("لغو", async () => { await api("POST", `/leaves/${l.id}/cancel`); reload(); }, "ghost"));
+      return p;
+    } },
+  ], list.items)));
+}
+
+async function pPresence(box) {
+  const cur = await api("GET", "/presence/me");
+  const note = h("textarea", { rows: 2, placeholder: "یادداشت تحویل شیفت (اختیاری)", style: "margin-bottom:8px" });
+  const outNote = h("textarea", { rows: 2, placeholder: "گزارش تحویل شیفت به سرپرست / متصدی بعدی (اختیاری)", style: "margin-bottom:8px" });
+  box.append(card("حضور من",
+    cur ? h("p", {}, "از ساعت ", fmt(cur.checkInAt), " حاضر هستید.", cur.unscheduled ? " (بدون شیفت تعریف‌شده)" : "", cur.queued ? " (هنوز به سرور ارسال نشده)" : "") : h("p", { class: "muted" }, "در حال حاضر حضور ثبت نشده است."),
+    cur ? h("div", {}, me.role === "ATTENDANT" ? outNote : null, act("اعلام خروج", async () => {
+        const r = await mutate("POST", "/presence/check-out", { clientTime: new Date().toISOString(), ...(outNote.value.trim() ? { handoverNote: outNote.value.trim() } : {}) }, "اعلام خروج");
+        if (r.queued) await putCache("/presence/me", null); else toast("خروج ثبت شد");
+        reload();
+      }, "warn"))
+        : h("div", {}, me.role === "ATTENDANT" ? note : null, act("اعلام حضور", async () => {
+            const now = new Date().toISOString();
+            const body = { clientTime: now, ...(note.value.trim() ? { handoverNote: note.value.trim() } : {}) };
+            const r = await mutate("POST", "/presence/check-in", body, "اعلام حضور");
+            if (r.queued) await putCache("/presence/me", { checkInAt: now, unscheduled: false, queued: true }); else toast("حضور ثبت شد");
+            reload();
+          }, "ok"))));
+}
+
+/* ---------- dormitory reports ---------- */
+async function pReports(box) {
+  const students = me.dormitoryId ? (await api("GET", "/students?limit=100&status=RESIDENT")).items : [];
+  const catSel = h("select", { style: "max-width:260px" }, opts("reportCat").map((o) => h("option", { value: o.value }, o.label)));
+  const formBox = h("div");
+  const draw = () => {
+    const c = catSel.value;
+    const fields = [{ name: "title", label: "عنوان", required: true }];
+    if (c === "FOOD_RECEIPT" || c === "FOOD_DELIVERY") {
+      fields.push({ name: "mealType", label: "وعده", type: "select", required: true, placeholder: "انتخاب", options: opts("meal") });
+      fields.push({ name: "quantity", label: "تعداد (پرس / قلم)", type: "number", required: true, min: 0 });
+    }
+    if (c === "OFFICIAL_VISIT") fields.push({ name: "visitorName", label: "نام و سمت مسئول", required: true });
+    if (c === "UNEXPECTED_BEHAVIOR") fields.push({ name: "studentId", label: "دانشجو (اختیاری)", type: "select", placeholder: "—", options: students.map((x) => ({ value: x.id, label: fullName(x) })) });
+    fields.push({ name: "description", label: c === "UNEXPECTED_BEHAVIOR" ? "شرح رفتار *" : "شرح (اختیاری)", type: "textarea", required: c === "UNEXPECTED_BEHAVIOR" });
+    fields.push({ name: "occurredAt", label: "زمان رویداد (خالی = همین الان)", type: "datetime-local" });
+    formBox.innerHTML = "";
+    formBox.append(formEl(fields, "ثبت گزارش", async (d) => {
+      d.category = c;
+      const r = await mutate("POST", "/reports/dormitory", d, "گزارش: " + t("reportCat", c) + " — " + d.title);
+      if (!r.queued) toast("گزارش ثبت شد");
+      reload();
+    }));
+  };
+  catSel.addEventListener("change", draw);
+  box.append(card("گزارش جدید", h("div", { class: "row", style: "margin-bottom:12px" }, h("label", {}, "نوع گزارش: "), catSel), formBox));
+  draw();
+
+  const list = await api("GET", "/reports/dormitory?limit=50");
+  const supervisor = me.role === "DORM_SUPERVISOR";
+  box.append(card(supervisor ? "گزارش‌های خوابگاه" : "گزارش‌های من", table([
+    { h: "زمان", f: (r) => fmt(r.occurredAt) }, { h: "نوع", f: (r) => t("reportCat", r.category) }, { h: "عنوان", f: (r) => r.title },
+    { h: "جزئیات", f: (r) => h("span", { title: r.description || "" }, [r.mealType ? t("meal", r.mealType) : "", r.quantity != null ? " × " + num(r.quantity) : "", r.visitorName || "", r.description ? " " + r.description.slice(0, 40) : ""].join("") || "—") },
+    { h: "ثبت‌کننده", f: (r) => fullName(r.author) },
+    { h: "وضعیت", f: (r) => tag(t("reportStatus", r.status), r.status === "ESCALATED" ? "warn" : r.status === "REVIEWED" ? "ok" : "") },
+    { h: "", f: (r) => {
+      if (!supervisor) return null;
+      const p = [];
+      if (r.status === "SUBMITTED") p.push(act("بازبینی", () => modal("بازبینی گزارش", [{ name: "note", label: "یادداشت (اختیاری)", type: "textarea" }], "ثبت", async (d) => { await api("POST", `/reports/dormitory/${r.id}/review`, d); reload(); }), "ok"));
+      if (r.status !== "ESCALATED") p.push(act("ارجاع به مدیر سیستم", () => modal("ارجاع گزارش مهم", [{ name: "note", label: "توضیح برای مدیر سیستم", type: "textarea" }], "ارجاع", async (d) => { await api("POST", `/reports/dormitory/${r.id}/escalate`, d); reload(); }), "warn"));
+      return p;
+    } },
+  ], list.items, "گزارشی ثبت نشده است.")));
+}
+
+/* ---------- Jalali (Persian) date helpers ---------- */
+function jalaliToGregorian(jy, jm, jd) {
+  jy += 1595;
+  let days = -355668 + (365 * jy) + (Math.floor(jy / 33) * 8) + Math.floor(((jy % 33) + 3) / 4) + jd + (jm < 7 ? (jm - 1) * 31 : ((jm - 7) * 30) + 186);
+  let gy = 400 * Math.floor(days / 146097);
+  days %= 146097;
+  if (days > 36524) { gy += 100 * Math.floor(--days / 36524); days %= 36524; if (days >= 365) days++; }
+  gy += 4 * Math.floor(days / 1461);
+  days %= 1461;
+  if (days > 365) { gy += Math.floor((days - 1) / 365); days = (days - 1) % 365; }
+  let gd = days + 1;
+  const sal = [0, 31, ((gy % 4 === 0 && gy % 100 !== 0) || gy % 400 === 0) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  let gm = 0;
+  while (gm < 13 && gd > sal[gm]) { gd -= sal[gm]; gm++; }
+  return [gy, gm, gd];
+}
+const latinDigits = (x) => String(x).replace(/[۰-۹]/g, (c) => c.charCodeAt(0) - 0x06f0).replace(/[٠-٩]/g, (c) => c.charCodeAt(0) - 0x0660);
+/** "1405/01/01 نوروز" or "2026-03-21 Nowruz" -> { date: "2026-03-21", title } */
+function parseDateLine(line) {
+  const m = latinDigits(line).trim().match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})\s*(.*)$/);
+  if (!m) return null;
+  let y = +m[1], mo = +m[2], d = +m[3];
+  if (y < 1700) [y, mo, d] = jalaliToGregorian(y, mo, d);
+  return { date: `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`, title: m[4].trim() || "تعطیل" };
+}
+
+/* ---------- shifts ---------- */
+function shiftsPath() {
+  return `/shifts?limit=100&from=${new Date(Date.now() - 86400000).toISOString().slice(0, 10)}`;
+}
+async function pShifts(box) {
+  const isMgr = me.role === "SYSTEM_MANAGER";
+  const canEdit = isMgr || me.role === "DORM_SUPERVISOR";
+  const dorms = isMgr ? (await api("GET", "/dormitories?limit=100")).items : [];
+  const dormName = Object.fromEntries(dorms.map((d) => [d.id, d.name]));
+  const rules = await api("GET", "/shifts/settings");
+  box.append(card("قانون شیفت", h("p", { class: "muted" },
+    `شیفت متصدی از ساعت ${num(rules.startHour)} شروع می‌شود و ساعت ${num(rules.workdayEndHour)} صبح روز بعد به سرپرست تحویل داده می‌شود. اگر صبح روز بعد تعطیل باشد، متصدی تا ساعت ${num(rules.holidayEndHour)} می‌ماند و به متصدی بعدی تحویل می‌دهد؛ ${num(rules.holidayEndHour - rules.workdayEndHour)} ساعت اضافه برای او اضافه‌کاری حساب می‌شود.`)));
+
+  if (canEdit) {
+    const attendants = (await api("GET", "/users?role=ATTENDANT&limit=100")).items.filter((u) => u.isActive && (isMgr || u.dormitoryId === me.dormitoryId));
+    const dormSel = isMgr ? h("select", { style: "max-width:260px" }, h("option", { value: "" }, "انتخاب خوابگاه"), dorms.map((d) => h("option", { value: d.id }, d.name))) : null;
+    const getDorm = () => (isMgr ? dormSel.value : me.dormitoryId);
+    const day = (o) => new Date(Date.now() + o * 86400000).toISOString().slice(0, 10);
+    const fromIn = h("input", { type: "date", value: day(0), style: "max-width:170px" });
+    const toIn = h("input", { type: "date", value: day(29), style: "max-width:170px" });
+    const selected = [];
+    const list = h("div");
+    const result = h("div");
+    const REASON = { SHIFT_OVERLAP: "شیفت هم‌پوشان", ON_LEAVE: "مرخصی تأییدشده" };
+    const drawList = () => {
+      list.innerHTML = "";
+      const pool = attendants.filter((u) => !isMgr || u.dormitoryId === getDorm());
+      if (!pool.length) list.append(h("p", { class: "muted" }, isMgr ? "متصدی‌ای برای این خوابگاه تعریف نشده است." : "متصدی‌ای به خوابگاه شما متصل نیست."));
+      for (const u of pool) {
+        const idx = selected.indexOf(u.id);
+        const cb = h("input", { type: "checkbox", checked: idx >= 0, onchange: () => { if (cb.checked) selected.push(u.id); else selected.splice(selected.indexOf(u.id), 1); result.innerHTML = ""; drawList(); } });
+        const swap = (a, b) => { [selected[a], selected[b]] = [selected[b], selected[a]]; result.innerHTML = ""; drawList(); };
+        list.append(h("div", { class: "arow" }, h("label", { class: "row aname" }, cb, fullName(u) + (u.isStudentWorker ? " (کار دانشجویی)" : "")),
+          idx >= 0 ? tag("نفر " + num(idx + 1) + " در چرخه", "ok") : null,
+          idx > 0 ? h("button", { type: "button", class: "btn sm ghost", onclick: () => swap(idx, idx - 1) }, "▲") : null,
+          idx >= 0 && idx < selected.length - 1 ? h("button", { type: "button", class: "btn sm ghost", onclick: () => swap(idx, idx + 1) }, "▼") : null));
+      }
+    };
+    if (dormSel) dormSel.addEventListener("change", () => { selected.length = 0; result.innerHTML = ""; drawList(); });
+    const call = (dryRun) => {
+      if (!getDorm()) throw new Error("خوابگاه را انتخاب کنید");
+      if (!selected.length) throw new Error("حداقل یک متصدی را انتخاب کنید");
+      return api("POST", "/shifts/generate", { dormitoryId: getDorm(), attendantIds: selected, from: fromIn.value, to: toIn.value, dryRun });
+    };
+    const showPlan = (r) => {
+      result.innerHTML = "";
+      result.append(h("p", {}, `${num(r.wouldCreate)} شیفت قابل ثبت — مجموع اضافه‌کاری: ${num(r.overtimeHoursTotal)} ساعت`, r.skipped.length ? ` — ${num(r.skipped.length)} روز رد می‌شود` : ""),
+        table([
+          { h: "روز شروع", f: (x) => fmtDay(x.startsAt) }, { h: "متصدی", f: (x) => x.userName },
+          { h: "شروع", f: (x) => fmt(x.startsAt) }, { h: "پایان", f: (x) => fmt(x.endsAt) },
+          { h: "اضافه‌کاری", f: (x) => x.overtimeMinutes ? tag(num(x.overtimeMinutes / 60) + " ساعت", "warn") : "—" },
+          { h: "وضعیت", f: (x) => x.skipped ? tag(REASON[x.skipped] || x.skipped, "bad") : tag("قابل ثبت", "ok") },
+        ], r.shifts, ""));
+    };
+    drawList();
+    box.append(card("برنامه‌ی نوبت‌کاری چرخشی",
+      h("p", { class: "muted" }, "متصدیان را به ترتیب نوبت انتخاب کنید. هر روز یک نفر نوبت دارد و با سه متصدی، هر نفر هر سه روز یک‌بار شیفت می‌شود (بین دو شیفت او دو روز فاصله است). نفر اول در «روز شروع» نوبت دارد."),
+      h("div", { class: "row", style: "margin-bottom:10px" }, isMgr ? [h("label", {}, "خوابگاه: "), dormSel] : null, h("label", {}, "روز شروع اولین شیفت: "), fromIn, h("label", {}, "روز شروع آخرین شیفت: "), toIn),
+      list,
+      h("div", { class: "row", style: "margin-top:12px" }, act("پیش‌نمایش", async () => showPlan(await call(true)), "ghost"),
+        act("ثبت برنامه", async () => { const r = await call(false); toast(num(r.created) + " شیفت ثبت شد" + (r.skipped.length ? " (" + num(r.skipped.length) + " روز به‌دلیل تداخل رد شد)" : "")); reload(); }, "ok")),
+      result));
+
+    const attOptions = attendants.map((u) => ({ value: u.id, label: fullName(u) + (isMgr && u.dormitoryId ? " — " + (dormName[u.dormitoryId] || "") : "") }));
+    const dormField = isMgr ? [{ name: "dormitoryId", label: "خوابگاه محل شیفت", type: "select", required: true, placeholder: "انتخاب", options: dorms.map((d) => ({ value: d.id, label: d.name })) }] : [];
+    box.append(card("شیفت تکی (استاندارد)",
+      h("p", { class: "muted" }, isMgr ? "مدیر سیستم می‌تواند متصدی را در هر خوابگاه دانشگاه (شیفت فوق‌العاده) بگذارد." : "برای شیفت فوق‌العاده در خوابگاه دیگر با مدیر سیستم هماهنگ کنید."),
+      formEl([...dormField, { name: "userId", label: "متصدی", type: "select", required: true, placeholder: "انتخاب", options: attOptions },
+        { name: "date", label: "روز شروع شیفت", type: "date", required: true }, { name: "note", label: "توضیح" }], "ثبت شیفت", async (d) => {
+        if (!isMgr) d.dormitoryId = me.dormitoryId;
+        await api("POST", "/shifts", d); toast("شیفت ثبت شد"); reload();
+      })));
+    box.append(card("شیفت با زمان دلخواه",
+      formEl([...dormField, { name: "userId", label: "متصدی", type: "select", required: true, placeholder: "انتخاب", options: attOptions },
+        { name: "startsAt", label: "شروع", type: "datetime-local", required: true }, { name: "endsAt", label: "پایان", type: "datetime-local", required: true }, { name: "note", label: "توضیح" }], "ثبت شیفت", async (d) => {
+        if (!isMgr) d.dormitoryId = me.dormitoryId;
+        await api("POST", "/shifts", d); toast("شیفت ثبت شد"); reload();
+      })));
+  }
+  const list = await api("GET", shiftsPath());
+  box.append(card(canEdit ? "شیفت‌ها" : "شیفت‌های من", table([
+    { h: "متصدی", f: (x) => fullName(x.user) + (x.user?.isStudentWorker ? " (کار دانشجویی)" : "") },
+    { h: "خوابگاه", f: (x) => dormName[x.dormitoryId] || (x.dormitoryId === me.dormitoryId ? "خوابگاه من" : "خوابگاه دیگر") },
+    { h: "شروع", f: (x) => fmt(x.startsAt) }, { h: "پایان", f: (x) => fmt(x.endsAt) },
+    { h: "اضافه‌کاری", f: (x) => x.overtimeMinutes ? tag(num(x.overtimeMinutes / 60) + " ساعت", "warn") : "—" },
+    { h: "نوع", f: (x) => tag(t("shiftType", x.type), x.type === "REGULAR" ? "" : "warn") },
+    { h: "توضیح", f: (x) => x.note || "—" },
+    { h: "", f: (x) => x.cancelledAt ? tag("لغوشده", "bad") : canEdit ? act("لغو", async () => { await api("POST", `/shifts/${x.id}/cancel`); reload(); }, "bad") : null },
+  ], list.items, "شیفتی ثبت نشده است.")));
+}
+
+/* ---------- shift rules & holidays (system manager) ---------- */
+async function pShiftSettings(box) {
+  const s = await api("GET", "/shifts/settings");
+  const days = [["6", "شنبه"], ["0", "یکشنبه"], ["1", "دوشنبه"], ["2", "سه‌شنبه"], ["3", "چهارشنبه"], ["4", "پنجشنبه"], ["5", "جمعه"]];
+  box.append(card("قانون شیفت", formEl([
+    { name: "startHour", label: "ساعت شروع شیفت", type: "number", required: true, min: 0, max: 23, value: s.startHour },
+    { name: "workdayEndHour", label: "پایان شیفت وقتی روز بعد کاری است (تحویل به سرپرست)", type: "number", required: true, min: 0, max: 23, value: s.workdayEndHour },
+    { name: "holidayEndHour", label: "پایان شیفت وقتی روز بعد تعطیل است (تحویل به متصدی بعدی)", type: "number", required: true, min: 0, max: 23, value: s.holidayEndHour },
+    ...days.map(([v, l]) => ({ name: "off" + v, label: "تعطیل هفتگی: " + l, type: "checkbox", value: s.weeklyOffDays.includes(Number(v)) })),
+  ], "ذخیره قانون", async (d, f) => {
+    const weeklyOffDays = days.filter(([v]) => f.elements["off" + v].checked).map(([v]) => Number(v));
+    await api("PUT", "/shifts/settings", { startHour: d.startHour, workdayEndHour: d.workdayEndHour, holidayEndHour: d.holidayEndHour, weeklyOffDays });
+    toast("ذخیره شد");
+  })));
+  const ta = h("textarea", { rows: 6, placeholder: "هر خط یک تعطیلی (تاریخ شمسی یا میلادی):\n1405/01/01 نوروز\n1405/01/02 نوروز\n2026-03-23 تعطیلی دلخواه" });
+  box.append(card("افزودن تعطیلات رسمی",
+    h("p", { class: "muted" }, "جمعه‌ها (یا هر روز تعطیل هفتگی که بالا تیک زدید) خودکار تعطیل حساب می‌شوند؛ اینجا فقط تعطیلات رسمی و مناسبتی را وارد کنید."),
+    ta, h("div", { style: "margin-top:10px" }, act("افزودن", async () => {
+      const items = ta.value.split("\n").map((l) => l.trim()).filter(Boolean).map((l) => { const p = parseDateLine(l); if (!p) throw new Error("خط نامعتبر: " + l); return p; });
+      if (!items.length) throw new Error("تاریخی وارد نشده است");
+      const r = await api("POST", "/shifts/holidays", { items });
+      toast(`${num(r.added)} روز افزوده شد` + (r.ignoredDuplicates ? ` (${num(r.ignoredDuplicates)} تکراری)` : "")); reload();
+    }, "ok"))));
+  const hol = await api("GET", `/shifts/holidays?from=${new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)}`);
+  box.append(card("تعطیلات ثبت‌شده", table([
+    { h: "تاریخ", f: (x) => fmtDay(x.date) }, { h: "عنوان", f: (x) => x.title },
+    { h: "", f: (x) => act("حذف", async () => { await api("DELETE", `/shifts/holidays/${x.id}`); reload(); }, "bad") },
+  ], hol, "تعطیلی ثبت نشده است.")));
+}
+
+/* ---------- monthly work of staff ---------- */
+async function pWork(box) {
+  const supervisor = me.role === "DORM_SUPERVISOR";
+  const dorms = supervisor ? [] : (await api("GET", "/dormitories?limit=100")).items;
+  const day = (offset) => new Date(Date.now() + offset * 86400000).toISOString().slice(0, 10);
+  const sel = h("select", { style: "max-width:240px" }, h("option", { value: "" }, "همه‌ی خوابگاه‌ها"), dorms.map((d) => h("option", { value: d.id }, d.name)));
+  const fromIn = h("input", { type: "date", value: day(-30), style: "max-width:170px" });
+  const toIn = h("input", { type: "date", value: day(0), style: "max-width:170px" });
+  const area = h("div");
+  const hrs = (m) => num(Number((m / 60).toFixed(1)));
+  const load = async () => {
+    area.innerHTML = "";
+    const end = new Date(new Date(toIn.value).getTime() + 86400000).toISOString().slice(0, 10); // inclusive end day
+    const r = await api("GET", `/reports/staff-monthly?from=${fromIn.value}&to=${end}${sel.value ? "&dormitoryId=" + sel.value : ""}`);
+    area.append(h("p", { class: "muted" }, "ساعت‌ها: کارکرد = مجموع حضورهای ثبت‌شده (با خروج)؛ برنامه‌ریزی‌شده = مجموع شیفت‌ها؛ فوق‌العاده = حضور در شیفت فوق‌العاده/جایگزین؛ بدون شیفت = حضور بدون شیفت تعریف‌شده. اضافه‌کاری: ساعت‌های ماندن از ۰۸:۰۰ تا ۱۴:۰۰ در شیفت‌هایی که صبح روز بعدشان تعطیل است؛ «برنامه‌ای» از برنامه‌ی شیفت و «انجام‌شده» از ساعت خروج واقعی محاسبه می‌شود."));
+    area.append(table([
+      { h: "نام", f: (x) => fullName(x) }, { h: "نقش", f: (x) => t("role", x.role) + (x.workerPost ? " — " + t("post", x.workerPost) : "") },
+      { h: "کارکرد", f: (x) => hrs(x.workedMinutes) }, { h: "برنامه‌ریزی‌شده", f: (x) => hrs(x.scheduledMinutes) },
+      { h: "اضافه‌کاری (برنامه‌ای)", f: (x) => hrs(x.overtimeScheduledMinutes) }, { h: "اضافه‌کاری (انجام‌شده)", f: (x) => x.overtimeWorkedMinutes ? tag(hrs(x.overtimeWorkedMinutes), "warn") : "—" },
+      { h: "شیفت فوق‌العاده", f: (x) => hrs(x.extraShiftMinutes) }, { h: "بدون شیفت", f: (x) => hrs(x.unscheduledMinutes) },
+      { h: "مرخصی", f: (x) => hrs(x.leaveMinutes) }, { h: "تعداد حضور", f: (x) => num(x.presenceCount) },
+    ], r.staff, "داده‌ای برای این بازه وجود ندارد."));
+  };
+  box.append(card("کارکرد ماهانه‌ی همکاران", h("div", { class: "row" },
+    supervisor ? null : [h("label", {}, "خوابگاه: "), sel], h("label", {}, "از: "), fromIn, h("label", {}, "تا: "), toIn, act("نمایش", load)), area));
+  await load();
+}
+
+/* ---------- health inspection (رابط بهداشت) ---------- */
+function followUpModal(r, after) {
+  modal("اقدام برای: " + r.itemTitle, [
+    { name: "actionTaken", label: "اقداماتی که برای رفع انجام داده‌اید *", type: "textarea", required: true, value: r.actionTaken || "" },
+    { name: "obstacles", label: "موانع موجود (اختیاری)", type: "textarea", value: r.obstacles || "" },
+    { name: "resolved", label: "مورد رفع شد", type: "checkbox" },
+  ], "ثبت", async (d) => { await api("PATCH", `/health-checks/results/${r.id}/follow-up`, d); toast("ثبت شد"); after(); });
+}
+
+async function pHealthItems(box) {
+  box.append(card("افزودن مورد به چک‌لیست بهداشت",
+    h("p", { class: "muted" }, "این فهرست را خود شما تعیین می‌کنید و برای بررسی بهداشت همه‌ی خوابگاه‌ها یکسان است. تغییر عناوین، سوابق قبلی را عوض نمی‌کند."),
+    formEl([{ name: "title", label: "عنوان مورد بررسی", required: true }], "افزودن", async (d) => { await api("POST", "/health-checks/items", d); reload(); })));
+  const items = await api("GET", "/health-checks/items");
+  const move = async (it, dir) => {
+    const o = items[items.indexOf(it) + dir];
+    if (!o) return;
+    await api("PATCH", `/health-checks/items/${it.id}`, { order: o.order });
+    await api("PATCH", `/health-checks/items/${o.id}`, { order: it.order });
+    reload();
+  };
+  box.append(card("موارد چک‌لیست", table([
+    { h: "#", f: (it) => num(items.indexOf(it) + 1) }, { h: "عنوان", f: (it) => it.title },
+    { h: "وضعیت", f: (it) => tag(it.isActive ? "فعال" : "غیرفعال", it.isActive ? "ok" : "") },
+    { h: "", f: (it) => [
+      act("▲", () => move(it, -1), "ghost"), act("▼", () => move(it, 1), "ghost"),
+      act("ویرایش عنوان", () => modal("ویرایش عنوان", [{ name: "title", label: "عنوان", required: true, value: it.title }], "ذخیره", async (d) => { await api("PATCH", `/health-checks/items/${it.id}`, d); reload(); })),
+      act(it.isActive ? "غیرفعال" : "فعال", async () => { await api("PATCH", `/health-checks/items/${it.id}`, { isActive: !it.isActive }); reload(); }, "warn"),
+      act("حذف", async () => { if (confirm("این مورد از چک‌لیست حذف شود؟ سوابق قبلی حفظ می‌شود.")) { await api("DELETE", `/health-checks/items/${it.id}`); reload(); } }, "bad"),
+    ] },
+  ], items, "هنوز موردی تعریف نشده است.")));
+}
+
+async function pHealthInspect(box) {
+  const [dorms, items] = await Promise.all([api("GET", "/dormitories?limit=100"), api("GET", "/health-checks/items")]);
+  const active = items.filter((i) => i.isActive);
+  if (!active.length) return box.append(card("بررسی بهداشت", h("p", {}, "ابتدا از منوی «عناوین چک‌لیست» مواردی را که باید بررسی شوند تعریف کنید.")));
+  const sel = h("select", { style: "max-width:300px" }, h("option", { value: "" }, "انتخاب خوابگاه"), dorms.items.map((d) => h("option", { value: d.id }, d.name)));
+  const note = h("textarea", { rows: 2, placeholder: "توضیح کلی (اختیاری)" });
+  const state = new Map(), descs = new Map();
+  const rows = active.map((it) => {
+    const desc = h("input", { placeholder: "شرح مورد (الزامی)", style: "display:none;margin-top:6px" });
+    descs.set(it.id, desc);
+    let okB, badB;
+    const paint = () => { const v = state.get(it.id); okB.className = v === true ? "on PRESENT" : ""; badB.className = v === false ? "on ABSENT" : ""; desc.style.display = v === false ? "block" : "none"; };
+    okB = h("button", { type: "button", onclick: () => { state.set(it.id, true); paint(); } }, "سالم");
+    badB = h("button", { type: "button", onclick: () => { state.set(it.id, false); paint(); } }, "مورد دارد");
+    return h("div", { class: "arow", style: "flex-wrap:wrap" }, h("span", { class: "aname" }, it.title), h("div", { class: "seg big" }, okB, badB), h("div", { style: "flex-basis:100%" }, desc));
+  });
+  box.append(card("بررسی بهداشت خوابگاه",
+    h("div", { class: "row", style: "margin-bottom:10px" }, h("label", {}, "خوابگاه: "), sel), rows, h("div", { style: "margin-top:12px" }, note),
+    h("div", { class: "savebar" }, h("span", { class: "muted" }, "زمان بررسی همین لحظه ثبت می‌شود."),
+      act("ثبت بررسی", async () => {
+        if (!sel.value) throw new Error("خوابگاه را انتخاب کنید");
+        const results = [];
+        for (const it of active) {
+          const ok = state.get(it.id);
+          if (ok === undefined) throw new Error("وضعیت «" + it.title + "» را مشخص کنید");
+          const description = descs.get(it.id).value.trim();
+          if (!ok && !description) throw new Error("برای «" + it.title + "» شرح مورد را بنویسید");
+          results.push({ itemId: it.id, ok, ...(description ? { description } : {}) });
+        }
+        const name = sel.options[sel.selectedIndex].text;
+        const r = await mutate("POST", "/health-checks/inspections", { dormitoryId: sel.value, inspectedAt: new Date().toISOString(), note: note.value.trim() || undefined, results }, "بررسی بهداشت " + name);
+        if (!r.queued) toast("بررسی ثبت شد و به مسئولان نمایش داده می‌شود");
+        reload();
+      }, "ok"))));
+}
+
+async function pHealthList(box) {
+  const supervisor = me.role === "DORM_SUPERVISOR";
+  const dorms = supervisor ? [] : (await api("GET", "/dormitories?limit=100")).items;
+  const sel = h("select", { style: "max-width:260px" }, h("option", { value: "" }, "همه‌ی خوابگاه‌ها"), dorms.map((d) => h("option", { value: d.id }, d.name)));
+  const only = h("input", { type: "checkbox" });
+  const area = h("div");
+  const load = async () => {
+    area.innerHTML = "";
+    const qs = ["limit=30"];
+    if (sel.value) qs.push("dormitoryId=" + sel.value);
+    if (only.checked) qs.push("onlyIssues=true");
+    const r = await api("GET", "/health-checks/inspections?" + qs.join("&"));
+    if (!r.items.length) area.append(h("p", { class: "muted" }, "بررسی‌ای ثبت نشده است."));
+    for (const ins of r.items) {
+      area.append(card(null,
+        h("div", { class: "row", style: "justify-content:space-between" },
+          h("h3", { style: "margin:0" }, `${ins.dormitoryName || "—"} — ${fmt(ins.inspectedAt)}`),
+          h("span", {}, "بررسی‌کننده: " + fullName(ins.inspector) + " ", ins.issueCount ? tag(num(ins.issueCount) + " مورد دارد", "bad") : tag("بدون مورد", "ok"))),
+        ins.note ? h("p", { class: "muted" }, ins.note) : null,
+        table([
+          { h: "مورد بررسی", f: (x) => x.itemTitle }, { h: "نتیجه", f: (x) => x.ok ? tag("سالم", "ok") : tag("مورد دارد", "bad") },
+          { h: "شرح", f: (x) => x.description || "—" },
+          { h: "پیگیری", f: (x) => x.ok ? "—" : tag(t("followStatus", x.followStatus), x.followStatus === "RESOLVED" ? "ok" : x.followStatus === "OPEN" ? "bad" : "warn") },
+          { h: "اقدام سرپرست", f: (x) => x.actionTaken || "—" }, { h: "موانع", f: (x) => x.obstacles || "—" },
+          { h: "", f: (x) => supervisor && !x.ok && x.followStatus !== "RESOLVED" ? act("ثبت اقدام", () => followUpModal(x, load), "warn") : null },
+        ], ins.results)));
+    }
+  };
+  sel.addEventListener("change", () => load().catch((e) => toast(e.message, "err")));
+  only.addEventListener("change", () => load().catch((e) => toast(e.message, "err")));
+  box.append(card("بررسی‌های بهداشت", h("div", { class: "row" }, supervisor ? null : [h("label", {}, "خوابگاه: "), sel], h("label", { class: "row" }, only, " فقط بررسی‌های دارای مورد"))), area);
+  await load();
+}
+
+async function pHealthAlerts(box) {
+  const supervisor = me.role === "DORM_SUPERVISOR";
+  const sel = h("select", { style: "max-width:220px" }, h("option", { value: "" }, "در انتظار رفع"), h("option", { value: "RESOLVED" }, "رفع‌شده"));
+  const area = h("div");
+  const load = async () => {
+    area.innerHTML = "";
+    const rows = await api("GET", "/health-checks/alerts" + (sel.value ? "?status=" + sel.value : ""));
+    area.append(table([
+      { h: "خوابگاه", f: (x) => x.dormitoryName || "—" }, { h: "زمان بررسی", f: (x) => fmt(x.inspection?.inspectedAt) },
+      { h: "بررسی‌کننده", f: (x) => fullName(x.inspection?.inspector) }, { h: "مورد", f: (x) => x.itemTitle }, { h: "شرح", f: (x) => x.description || "—" },
+      { h: "وضعیت", f: (x) => tag(t("followStatus", x.followStatus), x.followStatus === "RESOLVED" ? "ok" : x.followStatus === "OPEN" ? "bad" : "warn") },
+      { h: "اقدام", f: (x) => x.actionTaken || "—" }, { h: "موانع", f: (x) => x.obstacles || "—" },
+      { h: "", f: (x) => supervisor && x.followStatus !== "RESOLVED" ? act("ثبت اقدام", () => followUpModal(x, load), "warn") : null },
+    ], rows, "موردی وجود ندارد."));
+  };
+  sel.addEventListener("change", () => load().catch((e) => toast(e.message, "err")));
+  box.append(card("هشدارهای بهداشت", h("div", { class: "row", style: "margin-bottom:10px" }, h("label", {}, "نمایش: "), sel), area));
+  await load();
+}
+
+/* ---------- maintenance & equipment ---------- */
+async function uploadFile(entity, entityId, file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await fetch(`/api/attachments?entity=${entity}&entityId=${entityId}`, { method: "POST", headers: { Authorization: "Bearer " + token }, body: fd });
+  let data = null;
+  try { data = await res.json(); } catch { /* empty */ }
+  if (!res.ok) throw new Error(Array.isArray(data?.message) ? data.message.join(" | ") : data?.message || "خطا " + res.status);
+  return data;
+}
+async function downloadAttachment(a) {
+  const res = await fetch(`/api/attachments/${a.id}/download`, { headers: { Authorization: "Bearer " + token } });
+  if (!res.ok) throw new Error("دانلود فایل ممکن نشد");
+  const url = URL.createObjectURL(await res.blob());
+  const link = h("a", { href: url, download: a.filename });
+  document.body.append(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+const money = (v) => (v == null ? "—" : num(Number(v)) + " ریال");
+const MSTATUS_TAG = { SUBMITTED: "", APPROVED: "warn", REJECTED: "bad", IN_PROGRESS: "warn", FIXED: "warn", CLOSED: "ok" };
+
+async function maintDetail(id, canUpload) {
+  const [r, files] = await Promise.all([api("GET", `/maintenance/${id}`), api("GET", `/attachments?entity=MAINTENANCE&entityId=${id}`)]);
+  const overlay = h("div", { class: "overlay" });
+  const close = () => overlay.remove();
+  const fileIn = h("input", { type: "file", accept: "application/pdf,image/png,image/jpeg" });
+  overlay.append(h("div", { class: "modal", style: "max-width:760px" },
+    h("h3", {}, r.title),
+    h("p", { class: "muted" }, `${t("kindReq", r.kind)}${r.category ? " — " + t("repairCat", r.category) : ""}${r.quantity ? " · تعداد " + num(r.quantity) : ""} · ${r.dormitory?.name || ""} · ${fmt(r.createdAt)} · ثبت: ${fullName(r.requestedBy)}`),
+    r.description ? h("p", {}, r.description) : null,
+    h("p", {}, "وضعیت: ", tag(t("maintStatus", r.status), MSTATUS_TAG[r.status]), "  برآورد: ", money(r.estimatedCost), "  هزینه‌ی واقعی: ", money(r.actualCost)),
+    h("h3", { style: "margin-top:14px" }, "سابقه‌ی پیگیری"),
+    table([
+      { h: "زمان", f: (e) => fmt(e.createdAt) },
+      { h: "تغییر", f: (e) => (e.fromStatus ? t("maintStatus", e.fromStatus) + " ← " : "") + t("maintStatus", e.toStatus) },
+      { h: "یادداشت", f: (e) => e.note || "—" },
+    ], r.events, ""),
+    h("h3", { style: "margin-top:14px" }, "پیوست‌ها (PDF / عکس، حداکثر ۱۰ مگابایت)"),
+    files.length ? table([{ h: "فایل", f: (a) => a.filename }, { h: "حجم", f: (a) => num(Math.max(1, Math.round(a.size / 1024))) + " کیلوبایت" }, { h: "", f: (a) => act("دانلود", () => downloadAttachment(a), "ghost") }], files, "") : h("p", { class: "muted" }, "پیوستی ثبت نشده است."),
+    canUpload ? h("div", { class: "row", style: "margin-top:10px" }, fileIn, act("بارگذاری", async () => {
+      if (!fileIn.files[0]) throw new Error("ابتدا فایل را انتخاب کنید");
+      await uploadFile("MAINTENANCE", id, fileIn.files[0]);
+      toast("فایل بارگذاری شد"); close(); maintDetail(id, canUpload);
+    }, "ok")) : null,
+    h("button", { class: "btn ghost", type: "button", onclick: close }, "بستن")));
+  document.body.append(overlay);
+}
+
+async function pMaintenance(box) {
+  const supervisor = me.role === "DORM_SUPERVISOR", manager = me.role === "SYSTEM_MANAGER";
+  const canUpload = supervisor || manager;
+  if (supervisor) {
+    const kindSel = h("select", { style: "max-width:220px" }, opts("kindReq").map((o) => h("option", { value: o.value }, o.label)));
+    const formBox = h("div");
+    const draw = () => {
+      const k = kindSel.value;
+      const fields = [{ name: "title", label: "عنوان", required: true },
+        ...(k === "REPAIR" ? [{ name: "category", label: "نوع تعمیرات", type: "select", required: true, placeholder: "انتخاب", options: opts("repairCat") }] : [{ name: "quantity", label: "تعداد", type: "number", min: 1 }]),
+        { name: "description", label: "شرح", type: "textarea" }];
+      formBox.replaceChildren(formEl(fields, "ثبت درخواست", async (d) => { d.kind = k; await api("POST", "/maintenance", d); toast("درخواست ثبت شد؛ برای تأیید و برآورد به مدیر سیستم می‌رسد"); reload(); }));
+    };
+    kindSel.addEventListener("change", draw);
+    box.append(card("درخواست جدید", h("div", { class: "row", style: "margin-bottom:12px" }, h("label", {}, "نوع درخواست: "), kindSel), formBox));
+    draw();
+  } else {
+    const sum = await api("GET", "/reports/maintenance-summary");
+    const tot = sum.byStatus.reduce((a, x) => ({ n: a.n + x.count, est: a.est + x.estimatedCost, act: a.act + x.actualCost }), { n: 0, est: 0, act: 0 });
+    box.append(card("خلاصه‌ی هزینه‌ها",
+      h("div", { class: "grid", style: "margin-bottom:12px" }, [["کل درخواست‌ها", num(tot.n)], ["برآورد کل (ریال)", num(tot.est)], ["هزینه‌ی واقعی (ریال)", num(tot.act)]].map(([k, v]) => h("div", { class: "stat" }, h("b", {}, v), h("span", {}, k)))),
+      table([{ h: "وضعیت", f: (x) => tag(t("maintStatus", x.status), MSTATUS_TAG[x.status]) }, { h: "تعداد", f: (x) => num(x.count) }, { h: "برآورد (ریال)", f: (x) => num(x.estimatedCost) }, { h: "هزینه‌ی واقعی (ریال)", f: (x) => num(x.actualCost) }], sum.byStatus, "")));
+  }
+
+  const status = h("select", { style: "max-width:200px" }, h("option", { value: "" }, "همه‌ی وضعیت‌ها"), opts("maintStatus").map((o) => h("option", { value: o.value }, o.label)));
+  const kind = h("select", { style: "max-width:160px" }, h("option", { value: "" }, "تعمیرات و تجهیزات"), opts("kindReq").map((o) => h("option", { value: o.value }, o.label)));
+  const area = h("div");
+  const load = async () => {
+    area.innerHTML = "";
+    const qs = ["limit=50"];
+    if (status.value) qs.push("status=" + status.value);
+    if (kind.value) qs.push("kind=" + kind.value);
+    const r = await api("GET", "/maintenance?" + qs.join("&"));
+    area.append(table([
+      { h: "تاریخ", f: (x) => fmtDay(x.createdAt) }, { h: "خوابگاه", f: (x) => x.dormitory?.name || "—" },
+      { h: "موضوع", f: (x) => h("div", {}, h("b", {}, x.title), h("div", { class: "muted", style: "font-size:12px" }, t("kindReq", x.kind) + (x.category ? " — " + t("repairCat", x.category) : "") + (x.quantity ? " · " + num(x.quantity) + " عدد" : ""))) },
+      { h: "وضعیت", f: (x) => tag(t("maintStatus", x.status), MSTATUS_TAG[x.status]) },
+      { h: "هزینه (ریال)", f: (x) => h("div", { style: "font-size:12.5px" }, "برآورد: " + (x.estimatedCost != null ? num(Number(x.estimatedCost)) : "—"), h("br"), "واقعی: " + (x.actualCost != null ? num(Number(x.actualCost)) : "—")) },
+      { h: "", f: (x) => {
+        const p = [act("جزئیات", () => maintDetail(x.id, canUpload), "ghost")];
+        if (manager) {
+          if (x.status === "SUBMITTED") {
+            p.push(act("تأیید و برآورد", () => modal("برآورد هزینه", [{ name: "estimatedCost", label: "برآورد هزینه (ریال)", type: "number", required: true, min: 0 }, { name: "note", label: "یادداشت", type: "textarea" }], "تأیید", async (d) => { await api("POST", `/maintenance/${x.id}/approve`, d); load(); }), "ok"));
+            p.push(act("رد", () => modal("رد درخواست", [{ name: "note", label: "دلیل", type: "textarea" }], "رد", async (d) => { await api("POST", `/maintenance/${x.id}/reject`, d); load(); }), "bad"));
+          }
+          if (x.status === "APPROVED") p.push(act("شروع اجرا", async () => { await api("POST", `/maintenance/${x.id}/start`, {}); load(); }));
+          if (["APPROVED", "IN_PROGRESS"].includes(x.status)) p.push(act("اعلام رفع", () => modal("اعلام رفع", [{ name: "actualCost", label: "هزینه‌ی واقعی (ریال)", type: "number", min: 0 }, { name: "note", label: "توضیح", type: "textarea" }], "ثبت", async (d) => { await api("POST", `/maintenance/${x.id}/fix`, d); load(); }), "ok"));
+        }
+        if (supervisor && x.status === "FIXED") {
+          p.push(act("تأیید رفع", async () => { await api("POST", `/maintenance/${x.id}/confirm`, {}); load(); }, "ok"));
+          p.push(act("هنوز رفع نشده", () => modal("بازگشایی", [{ name: "note", label: "چه چیزی هنوز مشکل دارد؟", type: "textarea" }], "ثبت", async (d) => { await api("POST", `/maintenance/${x.id}/reopen`, d); load(); }), "warn"));
+        }
+        return p;
+      } },
+    ], r.items, "درخواستی ثبت نشده است."));
+  };
+  status.addEventListener("change", () => load().catch((e) => toast(e.message, "err")));
+  kind.addEventListener("change", () => load().catch((e) => toast(e.message, "err")));
+  box.append(card("درخواست‌ها", h("div", { class: "row", style: "margin-bottom:10px" }, status, kind), area));
+  await load();
+}
+
+/* ---------- shell ---------- */
+const DASH = ["dash", "داشبورد", pDash];
+const MENUS = {
+  SUPER_ADMIN: [DASH, ["unis", "دانشگاه‌ها و مدیران ارشد", pUnis], ["sys", "وضعیت سیستم", pSystem], ["hlist", "بررسی‌های بهداشت", pHealthList], ["halerts", "هشدارهای بهداشت", pHealthAlerts]],
+  SENIOR_ADMIN: [DASH, ["users", "مدیران سیستم", pUsers], ["maint", "تعمیرات و تجهیزات", pMaintenance], ["vac", "ظرفیت خالی", pVacancy], ["attview", "حضور و غیاب", pAttendView], ["esc", "گزارش‌های ارجاعی", pEscalated], ["work", "کارکرد ماهانه", pWork], ["hlist", "بررسی‌های بهداشت", pHealthList], ["halerts", "هشدارهای بهداشت", pHealthAlerts], ["leaves", "مرخصی‌ها", pLeaves]],
+  SYSTEM_MANAGER: [DASH, ["dorms", "خوابگاه‌ها", pDorms], ["users", "کاربران", pUsers], ["maint", "تعمیرات و تجهیزات", pMaintenance], ["shifts", "شیفت‌ها", pShifts], ["shiftcfg", "تنظیمات شیفت و تعطیلات", pShiftSettings], ["vac", "ظرفیت خالی", pVacancy], ["attview", "حضور و غیاب", pAttendView], ["esc", "گزارش‌های ارجاعی", pEscalated], ["work", "کارکرد ماهانه", pWork], ["hlist", "بررسی‌های بهداشت", pHealthList], ["halerts", "هشدارهای بهداشت", pHealthAlerts], ["leaves", "مرخصی‌ها", pLeaves]],
+  DORM_SUPERVISOR: [DASH, ["struct", "ساختمان و اتاق‌ها", pStructure], ["students", "دانشجویان", pStudents], ["att", "حضور و غیاب", pAttendance], ["reports", "گزارش‌های خوابگاه", pReports], ["shifts", "شیفت‌ها", pShifts], ["staff", "کارکنان", pUsers], ["maint", "تعمیرات و تجهیزات", pMaintenance], ["refs", "ارجاع‌ها", pReferrals], ["halerts", "هشدارهای بهداشت", pHealthAlerts], ["hlist", "بررسی‌های بهداشت", pHealthList], ["work", "کارکرد ماهانه", pWork], ["leaves", "مرخصی‌ها", pLeaves], ["pres", "حضور من", pPresence]],
+  ATTENDANT: [DASH, ["att", "حضور و غیاب", pAttendance], ["reports", "گزارش‌ها", pReports], ["refs", "ارجاع به مشاوره", pReferrals], ["shifts", "شیفت‌های من", pShifts], ["leaves", "مرخصی", pLeaves], ["pres", "حضور من", pPresence]],
+  SERVICE_STAFF: [DASH, ["leaves", "مرخصی", pLeaves], ["pres", "حضور من", pPresence]],
+  COUNSELING: [DASH, ["refs", "ارجاع‌ها", pReferrals], ["psy", "برنامه روانشناسان", pPsych]],
+  HEALTH_LIAISON: [DASH, ["hinspect", "بررسی بهداشت", pHealthInspect], ["hitems", "عناوین چک‌لیست", pHealthItems], ["hlist", "سوابق بررسی", pHealthList], ["halerts", "وضعیت رفع موارد", pHealthAlerts]],
+};
+let current = "dash";
+
+function changePassword() {
+  modal("تغییر رمز عبور", [
+    { name: "oldPassword", label: "رمز فعلی", type: "password", required: true },
+    { name: "newPassword", label: "رمز جدید (حداقل ۶ کاراکتر)", type: "password", required: true },
+  ], "تغییر", async (d) => { await api("POST", "/auth/change-password", d); toast("رمز تغییر کرد"); });
+}
+
+let timersOn = false;
+async function render() {
+  const app = document.getElementById("app");
+  app.innerHTML = "";
+  if (!token) return renderLogin(app);
+  if (!me) {
+    try { me = await rawFetch("GET", "/auth/me"); localStorage.setItem("mad_me", JSON.stringify(me)); }
+    catch (e) {
+      const cached = localStorage.getItem("mad_me");
+      if (e instanceof NetError && cached) { me = JSON.parse(cached); offline = true; }
+      else { token = null; localStorage.removeItem("mad_token"); return renderLogin(app); }
+    }
+  }
+  const menu = MENUS[me.role] || [DASH];
+  if (!menu.find((m) => m[0] === current)) current = "dash";
+  const content = h("main");
+  app.append(
+    h("header", {}, h("div", { class: "brand" }, logo(36), h("h1", {}, "ماد"), h("span", { class: "who" }, "مدیریت اسکان دانشجویی")), statusBox,
+      h("span", { class: "who" }, `${fullName(me)} · ${t("role", me.role)}`),
+      h("button", { class: "btn sm ghost", onclick: changePassword }, "تغییر رمز"),
+      h("button", { class: "btn sm ghost", onclick: logout }, "خروج")),
+    h("div", { class: "shell" },
+      h("nav", {}, menu.map(([id, title]) => h("button", { class: id === current ? "on" : "", onclick: () => { current = id; render(); } }, title))),
+      content));
+  rerender = async () => {
+    content.innerHTML = "";
+    const page = menu.find((m) => m[0] === current)[2];
+    try { await page(content); } catch (e) { content.append(card("خطا", h("p", { style: "color:var(--bad)" }, e.message))); }
+  };
+  rerender();
+  updateStatus();
+  if (!timersOn) {
+    timersOn = true;
+    window.addEventListener("online", () => { setOffline(false); syncOutbox(); });
+    window.addEventListener("offline", () => setOffline(true));
+    setInterval(() => syncOutbox(), 20000);
+  }
+  if (bootedFor !== me.id) { bootedFor = me.id; syncOutbox(); prefetch(); }
+}
+
+function loginError(e) {
+  if (e instanceof NetError) return "اتصال به سرور برقرار نیست. اینترنت یا شبکه‌ی داخلی را بررسی کنید.";
+  if (e.status === 401) return "نام کاربری یا رمز عبور درست نیست، یا حساب موقتاً قفل شده است (بعد از ۵ تلاش ناموفق، ۱۵ دقیقه قفل می‌شود).";
+  if (e.status === 429) return "تلاش‌های ورود زیاد بود. یک دقیقه صبر کنید و دوباره امتحان کنید.";
+  return e.message;
+}
+function renderLogin(app) {
+  const user = h("input", { name: "username", placeholder: "کد ملی", dir: "ltr", inputmode: "numeric", autocomplete: "username", required: true, autofocus: true });
+  const pass = h("input", { name: "password", type: "password", placeholder: "رمز عبور", dir: "ltr", autocomplete: "current-password", required: true });
+  const eye = h("button", { type: "button", class: "eye", title: "نمایش / پنهان‌کردن رمز", onclick: () => { pass.type = pass.type === "password" ? "text" : "password"; } }, svgIcon(ICON.eye));
+  const err = h("div", { class: "login-err", style: "display:none" });
+  const btn = h("button", { class: "login-btn", type: "submit" }, "ورود");
+  const form = h("form", {
+    onsubmit: async (e) => {
+      e.preventDefault();
+      err.style.display = "none";
+      btn.disabled = true;
+      btn.replaceChildren(h("span", { class: "spin" }), "در حال ورود…");
+      try {
+        const r = await api("POST", "/auth/login", { username: latinDigits(user.value.trim()), password: pass.value });
+        token = r.accessToken; me = null; localStorage.setItem("mad_token", token); current = "dash";
+        render();
+      } catch (ex) {
+        err.textContent = loginError(ex); err.style.display = "block";
+        btn.disabled = false; btn.textContent = "ورود";
+      }
+    },
+  }, err, h("div", { class: "lf" }, svgIcon(ICON.user), user), h("div", { class: "lf" }, svgIcon(ICON.lock), pass, eye), btn);
+  app.append(h("div", { class: "login-bg" },
+    h("div", { class: "login-card" }, logo(96), h("h1", {}, "ماد"), h("p", { class: "tagline" }, "سامانه‌ی مدیریت اسکان دانشجویی"),
+      navigator.onLine ? null : h("div", { class: "login-err" }, "اینترنت قطع است؛ ورود فقط با اتصال به سرور ممکن است."),
+      form,
+      h("div", { class: "login-foot" }, "ورود با کد ملی و رمز عبور", h("br"), "در صورت فراموشی رمز، با مدیر مربوطه تماس بگیرید"))));
+}
+render();
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+</script>
+</body>
+</html>
