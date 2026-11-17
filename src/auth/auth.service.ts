@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import { Role } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { AuthUser } from '../common/auth-user';
 import { USER_SELECT } from '../common/scope';
@@ -19,7 +20,7 @@ export class AuthService {
   async login(username: string, password: string) {
     const user = await this.prisma.user.findUnique({
       where: { username },
-      include: { university: { select: { isActive: true } } },
+      include: { university: { select: { isActive: true, name: true } } },
     });
     const locked = !!user?.lockedUntil && user.lockedUntil > new Date();
     const ok = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
@@ -43,11 +44,26 @@ export class AuthService {
       entityId: user.id,
     });
     const { passwordHash, university, failedLogins, lockedUntil, ...safe } = user;
-    return { accessToken: await this.jwt.signAsync({ sub: user.id }), user: safe };
+    return { accessToken: await this.jwt.signAsync({ sub: user.id }), user: { ...safe, universityName: university?.name ?? null } };
   }
 
-  me(actor: AuthUser) {
-    return this.prisma.user.findUniqueOrThrow({ where: { id: actor.id }, select: USER_SELECT });
+  async me(actor: AuthUser) {
+    if (actor.role === Role.STUDENT) {
+      const st = await this.prisma.student.findUniqueOrThrow({
+        where: { id: actor.id },
+        include: {
+          university: { select: { name: true } },
+          assignments: { where: { endedAt: null }, take: 1, select: { dormitoryId: true, room: { select: { id: true, number: true, building: { select: { name: true } } } } } },
+        },
+      });
+      const rep = await this.prisma.councilRep.findFirst({ where: { studentId: st.id, endedAt: null, endsAt: { gte: new Date() } } });
+      return {
+        id: st.id, role: Role.STUDENT, firstName: st.firstName, lastName: st.lastName, universityId: st.universityId, universityName: st.university.name,
+        dormitoryId: st.assignments[0]?.dormitoryId ?? null, room: st.assignments[0]?.room ?? null, isCouncilRep: !!rep, mustChangePassword: false, permissions: [] as string[],
+      };
+    }
+    const { university, ...u } = await this.prisma.user.findUniqueOrThrow({ where: { id: actor.id }, select: { ...USER_SELECT, university: { select: { name: true } } } });
+    return { ...u, universityName: university?.name ?? null };
   }
 
   async changePassword(actor: AuthUser, oldPassword: string, newPassword: string) {

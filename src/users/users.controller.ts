@@ -7,7 +7,7 @@ import { CreateUserDto, ListUsersDto, ResetPasswordDto, SetActiveDto, SetDormito
 import { UsersService } from './users.service';
 
 @Controller('users')
-@Roles(Role.SUPER_ADMIN, Role.SENIOR_ADMIN, Role.SYSTEM_MANAGER, Role.DORM_SUPERVISOR)
+@Roles(Role.SUPER_ADMIN, Role.SENIOR_ADMIN, Role.SYSTEM_MANAGER, Role.DORM_SUPERVISOR, Role.COUNSELING)
 export class UsersController {
   constructor(private svc: UsersService) {}
 

@@ -64,7 +64,7 @@ export class ShiftsService {
 
   private async holidaySet(universityId: string, from: string, to: string) {
     const rows = await this.prisma.holiday.findMany({ where: { universityId, date: { gte: dateOnly(from), lte: dateOnly(to) } }, select: { date: true } });
-    return new Set(rows.map((r) => dateStr(r.date)));
+    return new Set<string>(rows.map((r) => dateStr(r.date)));
   }
 
   private isOff(day: string, rules: Rules, holidays: Set<string>) {

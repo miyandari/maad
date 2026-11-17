@@ -9,7 +9,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { AttachmentsService, MAX_FILE_BYTES } from './attachments.service';
 
 const uuid = new ParseUUIDPipe();
-const ROLES = [Role.DORM_SUPERVISOR, Role.ATTENDANT, Role.SYSTEM_MANAGER, Role.SENIOR_ADMIN];
+const ROLES = [Role.DORM_SUPERVISOR, Role.ATTENDANT, Role.SYSTEM_MANAGER, Role.SENIOR_ADMIN, Role.FACILITIES, Role.GENERAL_AFFAIRS, Role.STUDENT];
 
 @Controller('attachments')
 @Roles(...ROLES)

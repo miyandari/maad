@@ -25,6 +25,10 @@ export class DashboardService {
       case Role.SERVICE_STAFF: return this.service(actor);
       case Role.COUNSELING: return this.counseling(actor);
       case Role.HEALTH_LIAISON: return this.liaison(actor);
+      case Role.PSYCHOLOGIST: return this.psychologist(actor);
+      case Role.STUDENT: return {};
+      case Role.FACILITIES:
+      case Role.GENERAL_AFFAIRS: return this.facilities(actor);
     }
   }
 
@@ -68,7 +72,7 @@ export class DashboardService {
       this.prisma.attendanceRecord.count({ where: { dormitoryId, date } }),
       this.prisma.leaveRequest.count({ where: { dormitoryId, status: LeaveStatus.PENDING_SUPERVISOR } }),
       this.prisma.maintenanceRequest.groupBy({ by: ['status'], where: { dormitoryId, status: { in: OPEN_MAINTENANCE } }, _count: { _all: true } }),
-      this.prisma.referral.count({ where: { dormitoryId, status: ReferralStatus.SUBMITTED } }),
+      this.prisma.maintenanceRequest.count({ where: { dormitoryId, status: MaintenanceStatus.PENDING_SUPERVISOR } }),
       this.prisma.staffPresence.count({ where: { dormitoryId, checkOutAt: null } }),
       this.prisma.dormReport.count({ where: { dormitoryId, status: ReportStatus.SUBMITTED } }),
       this.prisma.checklistReport.count({ where: { dormitoryId, status: ChecklistReportStatus.SUBMITTED } }),
@@ -80,7 +84,7 @@ export class DashboardService {
       residents, definedBeds: defined, occupiedBeds: occupied, freeBeds: defined - occupied,
       attendance: { recordedToday: recorded, residents }, leavesToDecide: leaves,
       openMaintenance: Object.fromEntries(maintenance.map((m) => [m.status, m._count._all])),
-      referralsToDecide: referrals, staffOnDuty: onDuty, reportsToReview: reports, checklistsToApprove: checklists,
+      studentRequestsToDecide: referrals, staffOnDuty: onDuty, reportsToReview: reports, checklistsToApprove: checklists,
     };
   }
 
@@ -111,11 +115,11 @@ export class DashboardService {
   private async counseling(actor: AuthUser) {
     const universityId = requireUniversity(actor);
     const [byStatus, urgentUnreceived, upcoming] = await Promise.all([
-      this.prisma.referral.groupBy({ by: ['status'], where: { universityId, status: { in: [ReferralStatus.APPROVED, ReferralStatus.RECEIVED, ReferralStatus.SCHEDULED] } }, _count: { _all: true } }),
-      this.prisma.referral.count({ where: { universityId, urgency: Urgency.URGENT, status: { in: [ReferralStatus.SUBMITTED, ReferralStatus.APPROVED] } } }),
-      this.prisma.psychologistSchedule.count({ where: { universityId, endsAt: { gte: new Date() } } }),
+      this.prisma.referral.groupBy({ by: ['status'], where: { universityId, status: { in: [ReferralStatus.SUBMITTED, ReferralStatus.RECEIVED, ReferralStatus.SCHEDULED] } }, _count: { _all: true } }),
+      this.prisma.referral.count({ where: { universityId, urgency: Urgency.URGENT, status: ReferralStatus.SUBMITTED } }),
+      this.prisma.psychSchedule.count({ where: { universityId, isActive: true } }),
     ]);
-    return { referrals: Object.fromEntries(byStatus.map((s) => [s.status, s._count._all])), urgentWaiting: urgentUnreceived, upcomingPsychologistVisits: upcoming };
+    return { referrals: Object.fromEntries(byStatus.map((s) => [s.status, s._count._all])), urgentWaiting: urgentUnreceived, activePsychSchedules: upcoming };
   }
 
   private async liaison(actor: AuthUser) {
@@ -127,5 +131,23 @@ export class DashboardService {
       this.prisma.healthResult.count({ where: { universityId, followStatus: { in: OPEN_HEALTH } } }),
     ]);
     return { inspectionsThisWeek: week, inspectionsWithIssuesThisWeek: withIssues, healthIssuesOpen: open };
+  }
+
+  private async psychologist(actor: AuthUser) {
+    const weekAgo = new Date(Date.now() - 7 * 86_400_000);
+    const [open, sessions, plans] = await Promise.all([
+      this.prisma.referral.count({ where: { assignedPsychologistId: actor.id, status: { in: [ReferralStatus.RECEIVED, ReferralStatus.SCHEDULED] } } }),
+      this.prisma.referralSession.count({ where: { psychologistId: actor.id, heldAt: { gte: weekAgo } } }),
+      this.prisma.psychSchedule.count({ where: { psychologistId: actor.id, isActive: true } }),
+    ]);
+    return { openAssignedReferrals: open, sessionsThisWeek: sessions, activePsychSchedules: plans };
+  }
+
+  private async facilities(actor: AuthUser) {
+    const [open, waiting] = await Promise.all([
+      this.prisma.maintenanceRequest.count({ where: { assignedToId: actor.id, status: { in: [MaintenanceStatus.APPROVED, MaintenanceStatus.IN_PROGRESS] } } }),
+      this.prisma.maintenanceRequest.count({ where: { assignedToId: actor.id, status: MaintenanceStatus.FIXED } }),
+    ]);
+    return { assignedOpenRequests: open, fixedWaitingSupervisor: waiting };
   }
 }

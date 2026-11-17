@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, Role } from '@prisma/client';
 import { AuthUser } from '../common/auth-user';
+import { dateStr, todayTehran, weekdayOf } from '../common/dates';
 import { requireDormitory, requireUniversity } from '../common/scope';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckInDto, ListPresenceDto } from './dto/staff.dto';
@@ -24,6 +25,7 @@ export class PresenceService {
   /** اعلام حضور و تحویل شیفت */
   async checkIn(actor: AuthUser, dto: CheckInDto) {
     const universityId = requireUniversity(actor);
+    if (actor.role === Role.PSYCHOLOGIST && !dto.dormitoryId) throw new BadRequestException('Choose the dormitory you are visiting');
     const dormitoryId = dto.dormitoryId ?? requireDormitory(actor);
     if (await this.prisma.staffPresence.findFirst({ where: { userId: actor.id, checkOutAt: null } })) {
       throw new ConflictException('You are already checked in');
@@ -34,7 +36,12 @@ export class PresenceService {
     const now = actionTime(dto.clientTime);
     let shiftId: string | null = null;
     let unscheduled = false;
-    if (actor.role === Role.ATTENDANT) {
+    let scheduleId: string | null = null;
+    if (actor.role === Role.PSYCHOLOGIST) {
+      // a psychologist announces his presence in a dormitory according to the plan set by the counseling office
+      scheduleId = await this.matchVisit(actor.id, dormitoryId, now);
+      unscheduled = !scheduleId; // allowed, but flagged for the counseling office
+    } else if (actor.role === Role.ATTENDANT) {
       const shift = await this.prisma.shift.findFirst({
         where: {
           userId: actor.id, dormitoryId, cancelledAt: null,
@@ -54,10 +61,23 @@ export class PresenceService {
     }
     return this.prisma.staffPresence.create({
       data: {
-        universityId, userId: actor.id, dormitoryId, shiftId, unscheduled, checkInAt: now,
+        universityId, userId: actor.id, dormitoryId, shiftId, scheduleId, unscheduled, checkInAt: now,
         handoverFromUserId: dto.handoverFromUserId, handoverNote: dto.handoverNote,
       },
     });
+  }
+
+  /** Finds the active weekly plan of this psychologist for this dormitory that covers `now` (30 min early .. 60 min late). */
+  private async matchVisit(userId: string, dormitoryId: string, now: Date): Promise<string | null> {
+    const day = todayTehran(now);
+    const plans = await this.prisma.psychSchedule.findMany({ where: { psychologistId: userId, dormitoryId, isActive: true, weekdays: { has: weekdayOf(day) } } });
+    for (const p of plans) {
+      if ((p.validFrom && day < dateStr(p.validFrom)) || (p.validTo && day > dateStr(p.validTo))) continue;
+      const start = new Date(`${day}T${p.startTime}:00+03:30`);
+      const end = new Date(`${day}T${p.endTime}:00+03:30`);
+      if (now.getTime() >= start.getTime() - EARLY_MS && now.getTime() <= end.getTime() + 60 * 60_000) return p.id;
+    }
+    return null;
   }
 
   async checkOut(actor: AuthUser, clientTime?: string, note?: string) {
@@ -79,7 +99,8 @@ export class PresenceService {
       ...(q.openOnly ? { checkOutAt: null } : {}),
       ...(q.from || q.to ? { checkInAt: { ...(q.from ? { gte: new Date(q.from) } : {}), ...(q.to ? { lte: new Date(q.to) } : {}) } } : {}),
     };
-    if (actor.role === Role.ATTENDANT || actor.role === Role.SERVICE_STAFF) where.userId = actor.id;
+    if (actor.role === Role.ATTENDANT || actor.role === Role.SERVICE_STAFF || actor.role === Role.PSYCHOLOGIST) where.userId = actor.id;
+    else if (actor.role === Role.COUNSELING) { where.universityId = requireUniversity(actor); where.user = { role: Role.PSYCHOLOGIST }; }
     else if (actor.role === Role.DORM_SUPERVISOR) where.dormitoryId = requireDormitory(actor);
     else where.universityId = requireUniversity(actor);
 

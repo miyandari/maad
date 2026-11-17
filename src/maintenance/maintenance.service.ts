@@ -4,7 +4,7 @@ import { AuditService } from '../audit/audit.service';
 import { AuthUser } from '../common/auth-user';
 import { requireDormitory, requireUniversity } from '../common/scope';
 import { PrismaService } from '../prisma/prisma.service';
-import { ApproveMaintenanceDto, CreateMaintenanceDto, FixMaintenanceDto, ListMaintenanceDto } from './dto/maintenance.dto';
+import { ApproveMaintenanceDto, AssignMaintenanceDto, CreateMaintenanceDto, FixMaintenanceDto, ListMaintenanceDto } from './dto/maintenance.dto';
 
 /**
  * supervisor submits -> system manager estimates & approves (or rejects) -> work starts -> manager marks it fixed
@@ -15,9 +15,30 @@ export class MaintenanceService {
   constructor(private prisma: PrismaService, private audit: AuditService) {}
 
   scope(actor: AuthUser): Prisma.MaintenanceRequestWhereInput {
-    return actor.role === Role.DORM_SUPERVISOR
-      ? { dormitoryId: requireDormitory(actor) }
-      : { universityId: requireUniversity(actor) };
+    // collective proposals waiting for the council representative are not the supervisor's business yet
+    if (actor.role === Role.DORM_SUPERVISOR) return { dormitoryId: requireDormitory(actor), status: { not: S.PENDING_REP } };
+    // facilities / general-affairs staff only see what was referred to them
+    if (actor.role === Role.FACILITIES || actor.role === Role.GENERAL_AFFAIRS) return { universityId: requireUniversity(actor), assignedToId: actor.id };
+    // managers only see requests after the supervisor approved them
+    return { universityId: requireUniversity(actor), status: { notIn: [S.PENDING_REP, S.PENDING_SUPERVISOR] } };
+  }
+
+  /** Adds the assignee, the room and (for supervisors/managers only) the name of the student who filed the request. */
+  private async decorate<T extends { assignedToId: string | null; requestedByStudentId: string | null; roomId: string | null }>(actor: AuthUser, rows: T[]) {
+    const showStudent = actor.role === Role.DORM_SUPERVISOR || actor.role === Role.SYSTEM_MANAGER || actor.role === Role.SENIOR_ADMIN;
+    const ids = (f: (r: T) => string | null) => [...new Set(rows.map(f).filter((x): x is string => !!x))];
+    const [users, students, rooms] = await Promise.all([
+      ids((r) => r.assignedToId).length ? this.prisma.user.findMany({ where: { id: { in: ids((r) => r.assignedToId) } }, select: { id: true, firstName: true, lastName: true, role: true } }) : [],
+      showStudent && ids((r) => r.requestedByStudentId).length ? this.prisma.student.findMany({ where: { id: { in: ids((r) => r.requestedByStudentId) } }, select: { id: true, firstName: true, lastName: true, phone: true } }) : [],
+      ids((r) => r.roomId).length ? this.prisma.room.findMany({ where: { id: { in: ids((r) => r.roomId) } }, select: { id: true, number: true, building: { select: { name: true } } } }) : [],
+    ]);
+    const um = new Map(users.map((u) => [u.id, u])), sm = new Map(students.map((x) => [x.id, x])), rm = new Map(rooms.map((x) => [x.id, x]));
+    return rows.map((r) => ({
+      ...r,
+      assignedTo: r.assignedToId ? um.get(r.assignedToId) ?? null : null,
+      requestedByStudent: r.requestedByStudentId ? sm.get(r.requestedByStudentId) ?? null : null,
+      room: r.roomId ? rm.get(r.roomId) ?? null : null,
+    }));
   }
 
   async create(actor: AuthUser, dto: CreateMaintenanceDto) {
@@ -52,7 +73,7 @@ export class MaintenanceService {
       }),
       this.prisma.maintenanceRequest.count({ where }),
     ]);
-    return { items, total, page: q.page, limit: q.limit };
+    return { items: await this.decorate(actor, items), total, page: q.page, limit: q.limit };
   }
 
   async get(actor: AuthUser, id: string) {
@@ -65,7 +86,42 @@ export class MaintenanceService {
       },
     });
     if (!r) throw new NotFoundException('Request not found');
-    return r;
+    return (await this.decorate(actor, [r]))[0];
+  }
+
+  /** The system manager refers an approved request to facilities (repairs) or general affairs (equipment). */
+  async assign(actor: AuthUser, id: string, dto: AssignMaintenanceDto) {
+    const req = await this.prisma.maintenanceRequest.findFirst({ where: { AND: [{ id }, this.scope(actor)] } });
+    if (!req) throw new NotFoundException('Request not found');
+    if (req.status !== S.APPROVED && req.status !== S.IN_PROGRESS) throw new ConflictException('Only approved requests can be referred');
+    const wanted = req.kind === RequestKind.REPAIR ? Role.FACILITIES : Role.GENERAL_AFFAIRS;
+    const user = await this.prisma.user.findFirst({ where: { id: dto.userId, universityId: req.universityId, role: wanted, isActive: true } });
+    if (!user) throw new NotFoundException(`${wanted} staff member not found`);
+    await this.prisma.$transaction([
+      this.prisma.maintenanceRequest.update({ where: { id }, data: { assignedToId: user.id, assignedAt: new Date() } }),
+      this.prisma.maintenanceEvent.create({ data: { requestId: id, actorId: actor.id, fromStatus: req.status, toStatus: req.status, note: `ارجاع به ${user.firstName} ${user.lastName}${dto.note ? ' — ' + dto.note : ''}` } }),
+    ]);
+    await this.audit.log({ actor, action: 'maintenance.assign', entity: 'MaintenanceRequest', entityId: id, universityId: req.universityId, meta: { assignedToId: user.id } });
+    return this.get(actor, id);
+  }
+
+  /** Progress note ("work done so far") that keeps the status unchanged. */
+  async addNote(actor: AuthUser, id: string, note: string) {
+    const req = await this.prisma.maintenanceRequest.findFirst({ where: { AND: [{ id }, this.scope(actor)] } });
+    if (!req) throw new NotFoundException('Request not found');
+    if (req.status !== S.APPROVED && req.status !== S.IN_PROGRESS) throw new ConflictException('Notes can only be added while the work is open');
+    if (!note?.trim()) throw new BadRequestException('A note is required');
+    await this.prisma.maintenanceEvent.create({ data: { requestId: id, actorId: actor.id, fromStatus: req.status, toStatus: req.status, note: note.trim() } });
+    await this.audit.log({ actor, action: 'maintenance.note', entity: 'MaintenanceRequest', entityId: id, universityId: req.universityId });
+    return this.get(actor, id);
+  }
+
+  /** Supervisor's decision on a request filed by a student. */
+  supervisorApprove(actor: AuthUser, id: string, note?: string) {
+    return this.transition(actor, id, [S.PENDING_SUPERVISOR], S.SUBMITTED, {}, note ?? 'تأیید سرپرست');
+  }
+  supervisorReject(actor: AuthUser, id: string, note?: string) {
+    return this.transition(actor, id, [S.PENDING_SUPERVISOR], S.REJECTED, {}, note ?? 'رد توسط سرپرست');
   }
 
   approve(actor: AuthUser, id: string, dto: ApproveMaintenanceDto) {

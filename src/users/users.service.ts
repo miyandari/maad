@@ -13,12 +13,16 @@ import { CreateUserDto, ListUsersDto, PERMISSIONS, UpdateUserDto } from './dto/u
 const CREATABLE: Record<Role, Role[]> = {
   [Role.SUPER_ADMIN]: [Role.SENIOR_ADMIN],
   [Role.SENIOR_ADMIN]: [Role.SYSTEM_MANAGER],
-  [Role.SYSTEM_MANAGER]: [Role.DORM_SUPERVISOR, Role.ATTENDANT, Role.SERVICE_STAFF, Role.COUNSELING, Role.HEALTH_LIAISON],
+  [Role.SYSTEM_MANAGER]: [Role.DORM_SUPERVISOR, Role.ATTENDANT, Role.SERVICE_STAFF, Role.COUNSELING, Role.HEALTH_LIAISON, Role.FACILITIES, Role.GENERAL_AFFAIRS],
   [Role.DORM_SUPERVISOR]: [Role.ATTENDANT, Role.SERVICE_STAFF],
   [Role.ATTENDANT]: [],
   [Role.SERVICE_STAFF]: [],
-  [Role.COUNSELING]: [],
+  [Role.COUNSELING]: [Role.PSYCHOLOGIST], // the counseling office defines its psychologists
   [Role.HEALTH_LIAISON]: [],
+  [Role.PSYCHOLOGIST]: [],
+  [Role.FACILITIES]: [],
+  [Role.GENERAL_AFFAIRS]: [],
+  [Role.STUDENT]: [],
 };
 
 /** Roles that may hold a student-work contract. */
@@ -99,6 +103,7 @@ export class UsersService {
       if (q.universityId) filters.push({ universityId: q.universityId });
     } else {
       filters.push({ universityId: requireUniversity(actor) });
+      if (actor.role === Role.COUNSELING) filters.push({ role: Role.PSYCHOLOGIST });
       if (actor.role === Role.DORM_SUPERVISOR) {
         // own staff + unassigned attendants/service staff of the university (so they can be attached)
         filters.push({

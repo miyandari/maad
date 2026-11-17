@@ -8,4 +8,6 @@ export interface AuthUser {
   dormitoryId: string | null;
   mustChangePassword?: boolean;
   permissions?: string[];
+  /** students only: the room they currently live in */
+  roomId?: string | null;
 }

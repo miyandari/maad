@@ -18,6 +18,10 @@ enum Role {
   SERVICE_STAFF   // خدمات
   COUNSELING      // اداره مشاوره و سلامت روان
   HEALTH_LIAISON  // رابط بهداشت (دانشگاه‌محور؛ در همه‌ی خوابگاه‌ها بازرسی می‌کند)
+  PSYCHOLOGIST    // روانشناس (توسط اداره مشاوره تعریف می‌شود)
+  FACILITIES      // تاسیسات (تعمیرات ارجاع‌شده)
+  GENERAL_AFFAIRS // اداره امور عمومی (تجهیزات ارجاع‌شده)
+  STUDENT         // دانشجوی ساکن (ورود با کد پیامکی؛ حساب کاربری عادی ندارد)
 }
 
 enum Gender {
@@ -179,12 +183,24 @@ enum RepairCategory {
 }
 
 enum MaintenanceStatus {
+  PENDING_REP        // درخواست جمعی دانشجو: منتظر نماینده شورای صنفی
+  PENDING_SUPERVISOR // درخواست دانشجو: منتظر تأیید سرپرست
   SUBMITTED
   APPROVED
   REJECTED
   IN_PROGRESS
   FIXED
   CLOSED
+}
+
+enum RequestScope {
+  ROOM
+  DORMITORY
+}
+
+enum FeedbackKind {
+  PRAISE     // تقدیر
+  SUGGESTION // پیشنهاد
 }
 
 enum AttachmentEntity {
@@ -273,6 +289,7 @@ model User {
   missions            Mission[]
   messageRecipients   MessageRecipient[]
   healthInspections   HealthInspection[]
+  psychSchedules      PsychSchedule[]
 
   @@index([universityId, role])
   @@index([dormitoryId])
@@ -297,7 +314,7 @@ model Dormitory {
   users                  User[]
   shifts                 Shift[]
   maintenanceRequests    MaintenanceRequest[]
-  psychologistSchedules  PsychologistSchedule[]
+  psychologistSchedules  PsychSchedule[]
 
   @@unique([universityId, name])
 }
@@ -471,6 +488,7 @@ model StaffPresence {
   dormitoryId        String
   shiftId            String?
   shift              Shift?    @relation(fields: [shiftId], references: [id])
+  scheduleId         String?   // psychologist visit plan this presence belongs to
   checkInAt          DateTime  @default(now())
   checkOutAt         DateTime?
   unscheduled        Boolean   @default(false)
@@ -554,8 +572,12 @@ model Referral {
   receivedById   String?
   receivedAt     DateTime?
   scheduledAt    DateTime?
+  assignedPsychologistId String?
+  assignedAt     DateTime?
+  supervisorFeedback String? // plain advice for the supervisor / reporter, no clinical detail
   counselingNote String?
   closedAt       DateTime?
+  sessions       ReferralSession[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -564,21 +586,42 @@ model Referral {
   @@index([reportedById])
 }
 
-model PsychologistSchedule {
-  id               String    @id @default(uuid())
-  universityId     String
-  dormitoryId      String
-  dormitory        Dormitory @relation(fields: [dormitoryId], references: [id])
-  psychologistName String
-  startsAt         DateTime
-  endsAt           DateTime
-  location         String?
-  note             String?
-  createdById      String
-  createdAt        DateTime  @default(now())
+/// Weekly visit plan of a psychologist in a dormitory (e.g. Saturdays and Mondays 16:00-19:00).
+model PsychSchedule {
+  id             String    @id @default(uuid())
+  universityId   String
+  psychologistId String
+  psychologist   User      @relation(fields: [psychologistId], references: [id])
+  dormitoryId    String
+  dormitory      Dormitory @relation(fields: [dormitoryId], references: [id])
+  weekdays       Int[]     // JS weekdays: 0 = Sunday ... 6 = Saturday
+  startTime      String    // "16:00"
+  endTime        String    // "19:00"
+  validFrom      DateTime? @db.Date
+  validTo        DateTime? @db.Date
+  location       String?
+  note           String?
+  isActive       Boolean   @default(true)
+  createdById    String
+  createdAt      DateTime  @default(now())
 
-  @@index([dormitoryId, startsAt])
-  @@index([universityId, startsAt])
+  @@index([universityId, isActive])
+  @@index([psychologistId])
+  @@index([dormitoryId])
+}
+
+model ReferralSession {
+  id             String   @id @default(uuid())
+  referralId     String
+  referral       Referral @relation(fields: [referralId], references: [id], onDelete: Cascade)
+  psychologistId String
+  heldAt         DateTime
+  summary        String   // confidential: visible to counseling office and psychologists only
+  recommendation String?  // confidential next step
+  createdAt      DateTime @default(now())
+
+  @@index([referralId, heldAt])
+  @@index([psychologistId, heldAt])
 }
 
 // ============================ maintenance & equipment ============================
@@ -588,8 +631,15 @@ model MaintenanceRequest {
   universityId  String
   dormitoryId   String
   dormitory     Dormitory         @relation(fields: [dormitoryId], references: [id])
-  requestedById String
-  requestedBy   User              @relation(fields: [requestedById], references: [id])
+  requestedById String?
+  requestedBy   User?             @relation(fields: [requestedById], references: [id])
+  requestedByStudentId String?    // set when a resident student filed it
+  roomId        String?           // for ROOM scope
+  scope         RequestScope      @default(DORMITORY)
+  urgent        Boolean           @default(false)
+  rejectedByRep Boolean           @default(false)
+  supporters    Int               @default(0)
+  supports      RequestSupport[]
   kind          RequestKind
   category      RepairCategory?
   title         String
@@ -598,6 +648,8 @@ model MaintenanceRequest {
   status        MaintenanceStatus @default(SUBMITTED)
   estimatedCost Decimal?          @db.Decimal(16, 0)
   actualCost    Decimal?          @db.Decimal(16, 0)
+  assignedToId  String?           // facilities (repairs) / general affairs (equipment) staff
+  assignedAt    DateTime?
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
   events        MaintenanceEvent[]
@@ -868,4 +920,58 @@ model Holiday {
   createdAt    DateTime @default(now())
 
   @@unique([universityId, date])
+}
+
+// ============================ student portal ============================
+
+model RequestSupport {
+  id        String             @id @default(uuid())
+  requestId String
+  request   MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  studentId String
+  createdAt DateTime           @default(now())
+
+  @@unique([requestId, studentId])
+}
+
+/// One-time SMS login codes for students (stored hashed, short lived, limited attempts).
+model StudentOtp {
+  id         String    @id @default(uuid())
+  studentId  String
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([studentId, createdAt])
+}
+
+/// نماینده شورای صنفی: appointed by the senior admin for one year per dormitory.
+model CouncilRep {
+  id            String    @id @default(uuid())
+  universityId  String
+  dormitoryId   String
+  studentId     String
+  startsAt      DateTime  @default(now())
+  endsAt        DateTime
+  endedAt       DateTime?
+  appointedById String
+
+  @@index([dormitoryId, endedAt])
+  @@index([studentId])
+}
+
+model StaffFeedback {
+  id           String       @id @default(uuid())
+  universityId String
+  dormitoryId  String
+  studentId    String
+  targetUserId String
+  kind         FeedbackKind
+  text         String
+  createdAt    DateTime     @default(now())
+
+  @@index([universityId, createdAt])
+  @@index([targetUserId])
 }

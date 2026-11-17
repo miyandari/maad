@@ -38,6 +38,7 @@ export class AuditService {
 
   async list(actor: AuthUser, q: ListAuditDto) {
     const where: Prisma.AuditLogWhereInput = {
+      NOT: { entity: 'Referral' }, // counseling referrals are confidential: never exposed through the audit view
       ...(actor.role === Role.SUPER_ADMIN ? {} : { universityId: requireUniversity(actor) }),
       ...(q.entity ? { entity: q.entity } : {}),
       ...(q.actorId ? { actorId: q.actorId } : {}),

@@ -32,3 +32,9 @@ export class FixMaintenanceDto {
 export class MaintenanceNoteDto {
   @IsOptional() @IsString() @MaxLength(500) note?: string;
 }
+
+export class AssignMaintenanceDto {
+  /** Facilities staff for repairs, general-affairs staff for equipment. */
+  @IsUUID() userId: string;
+  @IsOptional() @IsString() @MaxLength(500) note?: string;
+}

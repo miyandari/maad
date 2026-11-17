@@ -5,7 +5,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { RequireFeature } from '../common/decorators/features.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import {
-  ApproveMaintenanceDto, CreateMaintenanceDto, FixMaintenanceDto, ListMaintenanceDto, MaintenanceNoteDto,
+  ApproveMaintenanceDto, AssignMaintenanceDto, CreateMaintenanceDto, FixMaintenanceDto, ListMaintenanceDto, MaintenanceNoteDto,
 } from './dto/maintenance.dto';
 import { MaintenanceService } from './maintenance.service';
 
@@ -19,10 +19,10 @@ export class MaintenanceController {
   @Post() @Roles(Role.DORM_SUPERVISOR)
   create(@CurrentUser() u: AuthUser, @Body() dto: CreateMaintenanceDto) { return this.svc.create(u, dto); }
 
-  @Get() @Roles(Role.DORM_SUPERVISOR, Role.SYSTEM_MANAGER, Role.SENIOR_ADMIN)
+  @Get() @Roles(Role.DORM_SUPERVISOR, Role.SYSTEM_MANAGER, Role.SENIOR_ADMIN, Role.FACILITIES, Role.GENERAL_AFFAIRS)
   list(@CurrentUser() u: AuthUser, @Query() q: ListMaintenanceDto) { return this.svc.list(u, q); }
 
-  @Get(':id') @Roles(Role.DORM_SUPERVISOR, Role.SYSTEM_MANAGER, Role.SENIOR_ADMIN)
+  @Get(':id') @Roles(Role.DORM_SUPERVISOR, Role.SYSTEM_MANAGER, Role.SENIOR_ADMIN, Role.FACILITIES, Role.GENERAL_AFFAIRS)
   get(@CurrentUser() u: AuthUser, @Param('id', uuid) id: string) { return this.svc.get(u, id); }
 
   @Post(':id/approve') @HttpCode(200) @Roles(Role.SYSTEM_MANAGER)
@@ -31,10 +31,22 @@ export class MaintenanceController {
   @Post(':id/reject') @HttpCode(200) @Roles(Role.SYSTEM_MANAGER)
   reject(@CurrentUser() u: AuthUser, @Param('id', uuid) id: string, @Body() dto: MaintenanceNoteDto) { return this.svc.reject(u, id, dto.note); }
 
-  @Post(':id/start') @HttpCode(200) @Roles(Role.SYSTEM_MANAGER)
+  @Post(':id/supervisor-approve') @HttpCode(200) @Roles(Role.DORM_SUPERVISOR)
+  supervisorApprove(@CurrentUser() u: AuthUser, @Param('id', uuid) id: string, @Body() dto: MaintenanceNoteDto) { return this.svc.supervisorApprove(u, id, dto.note); }
+
+  @Post(':id/supervisor-reject') @HttpCode(200) @Roles(Role.DORM_SUPERVISOR)
+  supervisorReject(@CurrentUser() u: AuthUser, @Param('id', uuid) id: string, @Body() dto: MaintenanceNoteDto) { return this.svc.supervisorReject(u, id, dto.note); }
+
+  @Post(':id/assign') @HttpCode(200) @Roles(Role.SYSTEM_MANAGER)
+  assign(@CurrentUser() u: AuthUser, @Param('id', uuid) id: string, @Body() dto: AssignMaintenanceDto) { return this.svc.assign(u, id, dto); }
+
+  @Post(':id/note') @HttpCode(200) @Roles(Role.SYSTEM_MANAGER, Role.FACILITIES, Role.GENERAL_AFFAIRS)
+  note(@CurrentUser() u: AuthUser, @Param('id', uuid) id: string, @Body() dto: MaintenanceNoteDto) { return this.svc.addNote(u, id, dto.note ?? ''); }
+
+  @Post(':id/start') @HttpCode(200) @Roles(Role.SYSTEM_MANAGER, Role.FACILITIES, Role.GENERAL_AFFAIRS)
   start(@CurrentUser() u: AuthUser, @Param('id', uuid) id: string, @Body() dto: MaintenanceNoteDto) { return this.svc.start(u, id, dto.note); }
 
-  @Post(':id/fix') @HttpCode(200) @Roles(Role.SYSTEM_MANAGER)
+  @Post(':id/fix') @HttpCode(200) @Roles(Role.SYSTEM_MANAGER, Role.FACILITIES, Role.GENERAL_AFFAIRS)
   fix(@CurrentUser() u: AuthUser, @Param('id', uuid) id: string, @Body() dto: FixMaintenanceDto) { return this.svc.fix(u, id, dto); }
 
   @Post(':id/confirm') @HttpCode(200) @Roles(Role.DORM_SUPERVISOR)

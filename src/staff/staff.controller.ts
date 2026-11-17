@@ -11,6 +11,7 @@ import { ShiftsService } from './shifts.service';
 
 const uuid = new ParseUUIDPipe();
 const FLOOR_STAFF = [Role.ATTENDANT, Role.SERVICE_STAFF, Role.DORM_SUPERVISOR];
+const PRESENCE_ROLES = [...FLOOR_STAFF, Role.PSYCHOLOGIST];
 
 @Controller()
 export class StaffController {
@@ -45,16 +46,16 @@ export class StaffController {
   cancelShift(@CurrentUser() u: AuthUser, @Param('id', uuid) id: string) { return this.shifts.cancel(u, id); }
 
   // ---- presence ----
-  @Post('presence/check-in') @Roles(...FLOOR_STAFF)
+  @Post('presence/check-in') @Roles(...PRESENCE_ROLES)
   checkIn(@CurrentUser() u: AuthUser, @Body() dto: CheckInDto) { return this.presence.checkIn(u, dto); }
 
-  @Post('presence/check-out') @HttpCode(200) @Roles(...FLOOR_STAFF)
+  @Post('presence/check-out') @HttpCode(200) @Roles(...PRESENCE_ROLES)
   checkOut(@CurrentUser() u: AuthUser, @Body() dto: CheckOutDto) { return this.presence.checkOut(u, dto.clientTime, dto.handoverNote); }
 
-  @Get('presence/me') @Roles(...FLOOR_STAFF)
+  @Get('presence/me') @Roles(...PRESENCE_ROLES)
   myPresence(@CurrentUser() u: AuthUser) { return this.presence.current(u); }
 
-  @Get('presence') @Roles(Role.SENIOR_ADMIN, Role.SYSTEM_MANAGER, Role.DORM_SUPERVISOR)
+  @Get('presence') @Roles(Role.SENIOR_ADMIN, Role.SYSTEM_MANAGER, Role.DORM_SUPERVISOR, Role.COUNSELING, Role.PSYCHOLOGIST)
   listPresence(@CurrentUser() u: AuthUser, @Query() q: ListPresenceDto) { return this.presence.list(u, q); }
 
   // ---- leave ----

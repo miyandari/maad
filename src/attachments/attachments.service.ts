@@ -26,10 +26,15 @@ export class AttachmentsService {
   private async access(actor: AuthUser, entity: AttachmentEntity, entityId: string) {
     if (entity === AttachmentEntity.MAINTENANCE) {
       const r = await this.prisma.maintenanceRequest.findUnique({ where: { id: entityId } });
-      const ok = r && inScope(actor, { universityId: r.universityId, dormitoryId: r.dormitoryId }) &&
-        ([Role.SYSTEM_MANAGER, Role.SENIOR_ADMIN, Role.DORM_SUPERVISOR] as Role[]).includes(actor.role);
+      if (actor.role === Role.STUDENT) {
+        if (!r || r.requestedByStudentId !== actor.id) throw new NotFoundException('Not found');
+        return { universityId: r.universityId, dormitoryId: r.dormitoryId, canWrite: r.status === 'PENDING_REP' || r.status === 'PENDING_SUPERVISOR' };
+      }
+      const assignee = !!r && r.assignedToId === actor.id && ([Role.FACILITIES, Role.GENERAL_AFFAIRS] as Role[]).includes(actor.role);
+      const ok = r && (assignee || (inScope(actor, { universityId: r.universityId, dormitoryId: r.dormitoryId }) &&
+        ([Role.SYSTEM_MANAGER, Role.SENIOR_ADMIN, Role.DORM_SUPERVISOR] as Role[]).includes(actor.role)));
       if (!r || !ok) throw new NotFoundException('Not found');
-      return { universityId: r.universityId, dormitoryId: r.dormitoryId, canWrite: actor.role === Role.SYSTEM_MANAGER || actor.role === Role.DORM_SUPERVISOR };
+      return { universityId: r.universityId, dormitoryId: r.dormitoryId, canWrite: assignee || actor.role === Role.SYSTEM_MANAGER || actor.role === Role.DORM_SUPERVISOR };
     }
     const r = await this.prisma.dormReport.findUnique({ where: { id: entityId } });
     const isManager = actor.role === Role.SYSTEM_MANAGER || actor.role === Role.SENIOR_ADMIN;

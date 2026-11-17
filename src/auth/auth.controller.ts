@@ -2,6 +2,7 @@ import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthUser } from '../common/auth-user';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { AllowStudent } from '../common/decorators/allow-student.decorator';
 import { AllowPasswordChange } from '../common/decorators/allow-password-change.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { AuthService } from './auth.service';
@@ -20,6 +21,7 @@ export class AuthController {
   }
 
   @AllowPasswordChange()
+  @AllowStudent()
   @Get('me')
   me(@CurrentUser() user: AuthUser) {
     return this.auth.me(user);

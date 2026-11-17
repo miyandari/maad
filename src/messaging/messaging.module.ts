@@ -20,6 +20,6 @@ import { ISmsProvider, KavenegarSmsProvider, LogSmsProvider, SMS_PROVIDER } from
     MessagingService,
     SmsWorker,
   ],
-  exports: [SmsWorker],
+  exports: [SmsWorker, SMS_PROVIDER],
 })
 export class MessagingModule {}
