@@ -1,5 +1,5 @@
 import { FeedbackKind, RepairCategory, RequestKind, RequestScope } from '@prisma/client';
-import { IsBoolean, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Matches, MaxLength, Min } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Matches, MaxLength, Min } from 'class-validator';
 import { DATE_RE } from '../../common/dates';
 import { IsNationalId } from '../../common/national-id';
 import { PaginationDto } from '../../common/pagination.dto';
@@ -27,6 +27,12 @@ export class StudentRequestDto {
 }
 
 export class ForwardDto {
+  @IsOptional() @IsString() @MaxLength(1000) summary?: string;
+}
+
+export class MergeDto {
+  /** درخواست‌های تکراری که در درخواست اصلی ادغام می‌شوند (همه در انتظار نماینده و هم‌نوع) */
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(10) @IsUUID('all', { each: true }) duplicateIds: string[];
   @IsOptional() @IsString() @MaxLength(1000) summary?: string;
 }
 

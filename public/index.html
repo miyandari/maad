@@ -6,6 +6,10 @@
 <title>ماد — مدیریت اسکان دانشجویی</title>
 <meta name="theme-color" content="#14202e">
 <link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ماد">
 <style>
 :root{--bg:#eef3fa;--card:#fff;--ink:#1b2735;--mut:#6a778a;--line:#e5ecf5;--pri:#1e6fd9;--pri-d:#1858ae;--ok:#12805c;--bad:#c0392b;--warn:#b7791f;--sh:0 8px 26px rgba(15,40,90,.08)}
 *{box-sizing:border-box}
@@ -1835,7 +1839,7 @@ async function pStudentNew(box) {
 async function pProposals(box) {
   const rows = await api("GET", "/student/proposals");
   box.append(card("درخواست‌های جمعی خوابگاه",
-    h("p", { class: "muted" }, me.isCouncilRep ? "شما نماینده‌ی شورای صنفی هستید: درخواست‌ها را جمع‌بندی کنید و با تعداد حامیان برای سرپرست بفرستید، یا با ذکر دلیل برگردانید. نام دانشجویان نمایش داده نمی‌شود." : "درخواست‌های جمعی هم‌خوابگاهی‌ها اینجاست. اگر با موضوعی موافقید حمایت کنید تا نماینده آن را با تعداد حامیان برای سرپرست بفرستد."),
+    h("p", { class: "muted" }, me.isCouncilRep ? "شما نماینده‌ی شورای صنفی هستید: درخواست‌ها را جمع‌بندی کنید و با تعداد حامیان برای سرپرست بفرستید، یا با ذکر دلیل برگردانید. درخواست‌های تکراری را با «تکراری است؛ ادغام» در یک درخواست جمع کنید. نام دانشجویان نمایش داده نمی‌شود." : "درخواست‌های جمعی هم‌خوابگاهی‌ها اینجاست. اگر با موضوعی موافقید حمایت کنید تا نماینده آن را با تعداد حامیان برای سرپرست بفرستد."),
     table([
       { h: "موضوع", f: (x) => h("div", {}, h("b", {}, x.title), h("div", { class: "muted", style: "font-size:12px;white-space:normal" }, (x.description || "").slice(0, 120))) },
       { h: "نوع", f: (x) => t("kindReq", x.kind) + (x.category ? " — " + t("repairCat", x.category) : "") + (x.quantity ? " · " + num(x.quantity) + " عدد" : "") },
@@ -1846,6 +1850,14 @@ async function pProposals(box) {
         else p.push(tag("درخواست شما", ""));
         if (me.isCouncilRep) {
           p.push(act("ارسال برای سرپرست", () => modal("ارسال برای سرپرست", [{ name: "summary", label: "جمع‌بندی شما (اختیاری)", type: "textarea" }], "ارسال", async (d) => { await api("POST", `/student/proposals/${x.id}/forward`, d); toast("برای سرپرست ارسال شد"); reload(); })));
+          p.push(act("تکراری است؛ ادغام", () => {
+            const cands = rows.filter((y) => y.id !== x.id && y.kind === x.kind);
+            if (!cands.length) return toast("درخواست مشابه دیگری برای ادغام وجود ندارد");
+            modal("ادغام در درخواست مشابه", [{ name: "mainId", label: "این درخواست در کدام درخواست ادغام شود؟ (حامیان این درخواست و نویسنده‌اش به آن اضافه می‌شوند)", type: "select", required: true, placeholder: "انتخاب",
+              options: cands.map((y) => ({ value: y.id, label: y.title + " — " + num(y.supporters) + " حامی" })) }], "ادغام", async (d) => {
+              await api("POST", `/student/proposals/${d.mainId}/merge`, { duplicateIds: [x.id] }); toast("درخواست‌ها ادغام شد"); reload();
+            });
+          }, "warn"));
           p.push(act("بازگرداندن", () => modal("بازگرداندن درخواست", [{ name: "note", label: "دلیل (برای دانشجو نمایش داده می‌شود) *", type: "textarea", required: true }], "بازگرداندن", async (d) => { await api("POST", `/student/proposals/${x.id}/return`, d); reload(); }), "bad"));
         }
         return p;
@@ -1917,12 +1929,104 @@ async function pFeedbackView(box) {
 }
 
 /* ---------- shell ---------- */
+/* ---------- model room (اتاق نمونه) ---------- */
+async function pModelCriteria(box) {
+  box.append(card("افزودن معیار اتاق نمونه",
+    h("p", { class: "muted" }, "این معیارها را شما تعیین می‌کنید و برای همه‌ی خوابگاه‌های دانشگاه یکسان است. هر سال سرپرست هر اتاق را در هر معیار از ۱ تا ۵ امتیاز می‌دهد. «وزن» (۱ تا ۵) میزان اهمیت معیار در امتیاز نهایی است."),
+    formEl([
+      { name: "title", label: "عنوان معیار (مثلاً نظافت و نظم)", required: true },
+      { name: "weight", label: "وزن (۱ تا ۵)", type: "number", min: 1, max: 5, step: 1, value: 1 },
+    ], "افزودن", async (d) => { await api("POST", "/model-rooms/criteria", d); reload(); })));
+  const items = await api("GET", "/model-rooms/criteria");
+  const move = async (it, dir) => {
+    const o = items[items.indexOf(it) + dir];
+    if (!o) return;
+    await api("PATCH", `/model-rooms/criteria/${it.id}`, { order: o.order });
+    await api("PATCH", `/model-rooms/criteria/${o.id}`, { order: it.order });
+    reload();
+  };
+  box.append(card("معیارها", table([
+    { h: "#", f: (it) => num(items.indexOf(it) + 1) }, { h: "عنوان", f: (it) => it.title }, { h: "وزن", f: (it) => num(it.weight) },
+    { h: "وضعیت", f: (it) => tag(it.isActive ? "فعال" : "غیرفعال", it.isActive ? "ok" : "") },
+    { h: "", f: (it) => [
+      act("▲", () => move(it, -1), "ghost"), act("▼", () => move(it, 1), "ghost"),
+      act("ویرایش", () => modal("ویرایش معیار", [
+        { name: "title", label: "عنوان", required: true, value: it.title },
+        { name: "weight", label: "وزن (۱ تا ۵)", type: "number", min: 1, max: 5, step: 1, value: it.weight },
+      ], "ذخیره", async (d) => { await api("PATCH", `/model-rooms/criteria/${it.id}`, d); reload(); })),
+      act(it.isActive ? "غیرفعال" : "فعال", async () => { await api("PATCH", `/model-rooms/criteria/${it.id}`, { isActive: !it.isActive }); reload(); }, "warn"),
+      act("حذف", async () => { if (confirm("این معیار حذف شود؟ امتیازهای ثبت‌شده‌ی آن در سال جاری هم پاک می‌شود (اتاق‌های اعلام‌شده‌ی قبلی حفظ می‌شوند).")) { await api("DELETE", `/model-rooms/criteria/${it.id}`); reload(); } }, "bad"),
+    ] },
+  ], items, "هنوز معیاری تعریف نشده است.")));
+}
+
+async function pModelSelections(box) {
+  const d = await api("GET", "/model-rooms/selections");
+  box.append(card("اتاق‌های نمونه‌ی سال " + String(d.year).replace(/\d/g, (x) => "۰۱۲۳۴۵۶۷۸۹"[x]),
+    table([
+      { h: "خوابگاه", f: (x) => x.dormitoryName || "—" },
+      { h: "اتاق نمونه", f: (x) => (x.building ? x.building + " — " : "") + (x.roomNumber ?? "—") },
+      { h: "امتیاز (از ۵)", f: (x) => num(x.totalScore) },
+      { h: "ریزامتیاز", f: (x) => h("span", { class: "muted", style: "white-space:normal;display:block;min-width:220px" }, (x.breakdown || []).map((b) => `${b.title}: ${num(b.score)}`).join(" · ")) },
+      { h: "اعلام‌کننده", f: (x) => fullName(x.selectedBy) },
+      { h: "تاریخ اعلام", f: (x) => fmt(x.createdAt) },
+      { h: "توضیح", f: (x) => x.note || "—" },
+    ], d.items, "هنوز هیچ خوابگاهی اتاق نمونه‌ی این سال را اعلام نکرده است.")));
+  if (d.pendingDormitories.length && me.role !== "DORM_SUPERVISOR") {
+    box.append(card("خوابگاه‌هایی که هنوز اعلام نکرده‌اند", h("div", { class: "row" }, d.pendingDormitories.map((x) => tag(x.name, "warn")))));
+  }
+}
+
+async function pModelRoom(box) {
+  const b = await api("GET", "/model-rooms/board");
+  const yr = String(b.year).replace(/\d/g, (x) => "۰۱۲۳۴۵۶۷۸۹"[x]);
+  const label = (r) => (r.building ? r.building + " — " : "") + "اتاق " + r.number;
+  if (b.selection) {
+    const r = b.rooms.find((x) => x.roomId === b.selection.roomId);
+    box.append(card("اتاق نمونه‌ی سال " + yr,
+      h("p", {}, h("b", {}, r ? label(r) : "—"), " به‌عنوان اتاق نمونه به مدیر سیستم اعلام شد."),
+      h("p", { class: "muted" }, "امتیاز نهایی: " + num(b.selection.totalScore) + " از ۵ · " + fmt(b.selection.createdAt)),
+      b.selection.note ? h("p", { class: "muted" }, "توضیح: " + b.selection.note) : null,
+      h("p", { class: "muted" }, "انتخاب اتاق نمونه سالی یک‌بار است و امتیازها قفل شده‌اند.")));
+    return;
+  }
+  if (!b.criteria.length) {
+    return box.append(card("اتاق نمونه‌ی سال " + yr, h("p", {}, "هنوز معیاری برای انتخاب اتاق نمونه تعریف نشده است. با مدیر سیستم هماهنگ کنید.")));
+  }
+  box.append(card("اتاق نمونه‌ی سال " + yr,
+    h("p", { class: "muted" }, "هر اتاق را در هر معیار از ۱ تا ۵ امتیاز دهید. وقتی همه‌ی معیارهای یک اتاق امتیاز گرفت، می‌توانید آن را به‌عنوان اتاق نمونه‌ی امسال اعلام کنید. اعلام فقط یک‌بار در سال ممکن است و پس از آن امتیازها قفل می‌شود. امتیاز نهایی میانگین وزنی معیارهاست و فقط برای کمک به تصمیم شماست؛ انتخاب با خودتان است."),
+    h("p", { class: "muted" }, "معیارها: " + b.criteria.map((c) => `${c.title} (وزن ${num(c.weight)})`).join(" · "))));
+  const rows = [...b.rooms].sort((x, y) => (y.total ?? -1) - (x.total ?? -1));
+  box.append(card("اتاق‌ها", table([
+    { h: "رتبه", f: (r) => r.rank ? num(r.rank) : "—" },
+    { h: "اتاق", f: (r) => label(r) },
+    { h: "امتیازدهی", f: (r) => tag(`${num(r.scoredCount)} از ${num(b.criteria.length)}`, r.complete ? "ok" : r.scoredCount ? "warn" : "") },
+    { h: "امتیاز نهایی", f: (r) => r.total === null ? "—" : num(r.total) },
+    { h: "", f: (r) => [
+      act(r.scoredCount ? "ویرایش امتیاز" : "امتیازدهی", () => modal("امتیاز " + label(r), b.criteria.map((c) => ({
+        name: "c_" + c.id, label: `${c.title} (وزن ${num(c.weight)})`, type: "select", placeholder: "—",
+        options: [1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: num(n) })), value: r.scores[c.id] !== undefined ? String(r.scores[c.id]) : undefined,
+      })), "ذخیره", async (d) => {
+        const scores = b.criteria.filter((c) => d["c_" + c.id]).map((c) => ({ criterionId: c.id, score: Number(d["c_" + c.id]) }));
+        if (!scores.length) throw new Error("حداقل یک معیار را امتیاز دهید");
+        await api("PUT", "/model-rooms/scores", { roomId: r.roomId, scores });
+        toast("امتیازها ذخیره شد"); reload();
+      })),
+      r.complete ? act("اعلام به‌عنوان اتاق نمونه", () => modal("اعلام " + label(r) + " به‌عنوان اتاق نمونه‌ی " + yr + " (قطعی و یک‌بار در سال)",
+        [{ name: "note", label: "توضیح برای مدیر سیستم (اختیاری)", type: "textarea" }], "اعلام به مدیر سیستم", async (d) => {
+          await api("POST", "/model-rooms/selection", { roomId: r.roomId, note: d.note });
+          toast("اتاق نمونه اعلام شد"); reload();
+        }), "ok") : null,
+    ] },
+  ], rows, "اتاق سکونتی در خوابگاه شما ثبت نشده است.")));
+}
+
 const DASH = ["dash", "داشبورد", pDash];
 const MENUS = {
-  SUPER_ADMIN: [DASH, ["unis", "دانشگاه‌ها و مدیران ارشد", pUnis], ["sys", "وضعیت سیستم", pSystem], ["hlist", "بررسی‌های بهداشت", pHealthList], ["halerts", "هشدارهای بهداشت", pHealthAlerts]],
-  SENIOR_ADMIN: [DASH, ["users", "مدیران سیستم", pUsers], ["council", "نماینده‌های شورای صنفی", pCouncil], ["fb", "نظرات دانشجویان", pFeedbackView], ["maint", "تعمیرات و تجهیزات", pMaintenance], ["vac", "ظرفیت خالی", pVacancy], ["attview", "حضور و غیاب", pAttendView], ["pv", "برنامه حضور روانشناس", pVisits], ["esc", "گزارش‌های ارجاعی", pEscalated], ["work", "کارکرد ماهانه", pWork], ["hlist", "بررسی‌های بهداشت", pHealthList], ["halerts", "هشدارهای بهداشت", pHealthAlerts], ["leaves", "مرخصی‌ها", pLeaves]],
-  SYSTEM_MANAGER: [DASH, ["dorms", "خوابگاه‌ها", pDorms], ["fb", "نظرات دانشجویان", pFeedbackView], ["users", "کاربران", pUsers], ["maint", "تعمیرات و تجهیزات", pMaintenance], ["cl", "چک‌لیست خدمات و ماموریت", pChecklistTemplates], ["shifts", "شیفت‌ها", pShifts], ["shiftcfg", "تنظیمات شیفت و تعطیلات", pShiftSettings], ["vac", "ظرفیت خالی", pVacancy], ["attview", "حضور و غیاب", pAttendView], ["pv", "برنامه حضور روانشناس", pVisits], ["esc", "گزارش‌های ارجاعی", pEscalated], ["work", "کارکرد ماهانه", pWork], ["hlist", "بررسی‌های بهداشت", pHealthList], ["halerts", "هشدارهای بهداشت", pHealthAlerts], ["leaves", "مرخصی‌ها", pLeaves]],
-  DORM_SUPERVISOR: [DASH, ["struct", "ساختمان و اتاق‌ها", pStructure], ["students", "دانشجویان", pStudents], ["att", "حضور و غیاب", pAttendance], ["reports", "گزارش‌های خوابگاه", pReports], ["shifts", "شیفت‌ها", pShifts], ["staff", "کارکنان", pUsers], ["maint", "تعمیرات و تجهیزات", pMaintenance], ["clr", "چک‌لیست‌های خدمات", pChecklistReview], ["refs", "ارجاع به مشاوره", pReferrals], ["pv", "برنامه حضور روانشناس", pVisits], ["halerts", "هشدارهای بهداشت", pHealthAlerts], ["hlist", "بررسی‌های بهداشت", pHealthList], ["work", "کارکرد ماهانه", pWork], ["leaves", "مرخصی‌ها", pLeaves], ["pres", "حضور من", pPresence]],
+  SUPER_ADMIN: [DASH, ["unis", "دانشگاه‌ها و مدیران ارشد", pUnis], ["sys", "وضعیت سیستم", pSystem], ["hlist", "بررسی‌های بهداشت", pHealthList], ["halerts", "هشدارهای بهداشت", pHealthAlerts], ["mrs", "اتاق‌های نمونه", pModelSelections]],
+  SENIOR_ADMIN: [DASH, ["users", "مدیران سیستم", pUsers], ["council", "نماینده‌های شورای صنفی", pCouncil], ["fb", "نظرات دانشجویان", pFeedbackView], ["maint", "تعمیرات و تجهیزات", pMaintenance], ["vac", "ظرفیت خالی", pVacancy], ["attview", "حضور و غیاب", pAttendView], ["pv", "برنامه حضور روانشناس", pVisits], ["esc", "گزارش‌های ارجاعی", pEscalated], ["work", "کارکرد ماهانه", pWork], ["hlist", "بررسی‌های بهداشت", pHealthList], ["halerts", "هشدارهای بهداشت", pHealthAlerts], ["mrs", "اتاق‌های نمونه", pModelSelections], ["leaves", "مرخصی‌ها", pLeaves]],
+  SYSTEM_MANAGER: [DASH, ["dorms", "خوابگاه‌ها", pDorms], ["fb", "نظرات دانشجویان", pFeedbackView], ["users", "کاربران", pUsers], ["maint", "تعمیرات و تجهیزات", pMaintenance], ["cl", "چک‌لیست خدمات و ماموریت", pChecklistTemplates], ["shifts", "شیفت‌ها", pShifts], ["shiftcfg", "تنظیمات شیفت و تعطیلات", pShiftSettings], ["vac", "ظرفیت خالی", pVacancy], ["attview", "حضور و غیاب", pAttendView], ["pv", "برنامه حضور روانشناس", pVisits], ["esc", "گزارش‌های ارجاعی", pEscalated], ["work", "کارکرد ماهانه", pWork], ["hlist", "بررسی‌های بهداشت", pHealthList], ["halerts", "هشدارهای بهداشت", pHealthAlerts], ["mrc", "معیارهای اتاق نمونه", pModelCriteria], ["mrs", "اتاق‌های نمونه", pModelSelections], ["leaves", "مرخصی‌ها", pLeaves]],
+  DORM_SUPERVISOR: [DASH, ["struct", "ساختمان و اتاق‌ها", pStructure], ["students", "دانشجویان", pStudents], ["att", "حضور و غیاب", pAttendance], ["reports", "گزارش‌های خوابگاه", pReports], ["shifts", "شیفت‌ها", pShifts], ["staff", "کارکنان", pUsers], ["maint", "تعمیرات و تجهیزات", pMaintenance], ["clr", "چک‌لیست‌های خدمات", pChecklistReview], ["refs", "ارجاع به مشاوره", pReferrals], ["pv", "برنامه حضور روانشناس", pVisits], ["halerts", "هشدارهای بهداشت", pHealthAlerts], ["hlist", "بررسی‌های بهداشت", pHealthList], ["mr", "اتاق نمونه", pModelRoom], ["work", "کارکرد ماهانه", pWork], ["leaves", "مرخصی‌ها", pLeaves], ["pres", "حضور من", pPresence]],
   ATTENDANT: [DASH, ["att", "حضور و غیاب", pAttendance], ["reports", "گزارش‌ها", pReports], ["refs", "ارجاع به مشاوره", pReferrals], ["pv", "برنامه حضور روانشناس", pVisits], ["shifts", "شیفت‌های من", pShifts], ["leaves", "مرخصی", pLeaves], ["pres", "حضور من", pPresence]],
   SERVICE_STAFF: [DASH, ["cl", "چک‌لیست خدمات", pServiceChecklist], ["leaves", "مرخصی", pLeaves], ["pres", "حضور من", pPresence]],
   COUNSELING: [DASH, ["refs", "ارجاع‌ها و پرونده‌ها", pReferrals], ["psychs", "روانشناسان", pUsers], ["psy", "برنامه حضور روانشناسان", pPsychSchedules], ["perf", "عملکرد روانشناسان", pPerformance]],
@@ -1944,8 +2048,8 @@ const APP_INFO = {
 const HELP = {
   SUPER_ADMIN: [["دانشگاه‌ها", "از «دانشگاه‌ها و مدیران ارشد» دانشگاه را تعریف کنید و برایش مدیر ارشد بسازید (نام کاربری = کد ملی)."], ["وضعیت سیستم", "سلامت دیتابیس، مصرف حافظه و صف پیامک را در «وضعیت سیستم» ببینید."], ["بهداشت", "نتیجه‌ی بررسی‌های بهداشت همه‌ی دانشگاه‌ها و موارد رفع‌نشده در «هشدارهای بهداشت» است."]],
   SENIOR_ADMIN: [["مدیران سیستم", "از «مدیران سیستم» مدیر سیستم دانشگاه خود را تعریف کنید."], ["پایش", "ظرفیت خالی، حضور و غیاب، گزارش‌های ارجاعی، کارکرد همکاران، تعمیرات و هشدارهای بهداشت را بدون امکان ویرایش ببینید."]],
-  SYSTEM_MANAGER: [["شروع کار", "اول خوابگاه را تعریف کنید، سپس سرپرست، متصدی، خدمات، مشاوره، رابط بهداشت، تاسیسات و امور عمومی را در «کاربران» بسازید و سرپرست و متصدیان را به خوابگاه وصل کنید."], ["شیفت", "در «تنظیمات شیفت و تعطیلات» ساعت‌ها و تعطیلات را تنظیم کنید؛ برنامه‌ی چرخشی متصدیان را سرپرست یا شما از «شیفت‌ها» می‌سازید."], ["تعمیرات", "درخواست سرپرست را برآورد و تأیید کنید، سپس آن را به تاسیسات (تعمیرات) یا امور عمومی (تجهیزات) ارجاع دهید."], ["چک‌لیست خدمات", "در «چک‌لیست خدمات و ماموریت» فهرست کارهای روزانه‌ی خدمات را تعریف کنید؛ خدمات آن را پر می‌کند و سرپرست تأیید می‌کند."], ["مرخصی", "مرخصی‌هایی را که سرپرست تأیید کرده، تأیید نهایی کنید."]],
-  DORM_SUPERVISOR: [["ساختار", "در «ساختمان و اتاق‌ها» ساختمان و اتاق (تکی یا دسته‌ای) بسازید؛ هر اتاق به‌تعداد ظرفیتش تخت دارد."], ["دانشجو", "دانشجو را ثبت و با «اسکان» به تخت، کف‌خواب یا نفر مازاد اختصاص دهید؛ «جابجایی»، «مرخصی» و «تسویه» هم همین‌جاست."], ["شیفت", "در «شیفت‌ها» متصدیان را به‌ترتیب نوبت انتخاب و برنامه‌ی چرخشی را پیش‌نمایش و ثبت کنید."], ["بررسی گزارش‌ها", "گزارش‌های متصدی و چک‌لیست خدمات را تأیید یا ارجاع دهید؛ موارد بهداشتی را با اقدام و مانع پاسخ دهید. ارجاع‌های مشاوره را فقط خودِ گزارش‌دهنده و اداره مشاوره می‌بینند."], ["درخواست دانشجویان", "درخواست تعمیر و تجهیزات دانشجویان در «تعمیرات و تجهیزات» منتظر تأیید شماست؛ پس از تأیید برای مدیر سیستم می‌رود و دانشجو مرحله را می‌بیند."], ["تعمیرات", "خرابی‌ها را ثبت و پس از رفع، «تأیید رفع» بزنید."]],
+  SYSTEM_MANAGER: [["شروع کار", "اول خوابگاه را تعریف کنید، سپس سرپرست، متصدی، خدمات، مشاوره، رابط بهداشت، تاسیسات و امور عمومی را در «کاربران» بسازید و سرپرست و متصدیان را به خوابگاه وصل کنید."], ["شیفت", "در «تنظیمات شیفت و تعطیلات» ساعت‌ها و تعطیلات را تنظیم کنید؛ برنامه‌ی چرخشی متصدیان را سرپرست یا شما از «شیفت‌ها» می‌سازید."], ["تعمیرات", "درخواست سرپرست را برآورد و تأیید کنید، سپس آن را به تاسیسات (تعمیرات) یا امور عمومی (تجهیزات) ارجاع دهید."], ["چک‌لیست خدمات", "در «چک‌لیست خدمات و ماموریت» فهرست کارهای روزانه‌ی خدمات را تعریف کنید؛ خدمات آن را پر می‌کند و سرپرست تأیید می‌کند."], ["مرخصی", "مرخصی‌هایی را که سرپرست تأیید کرده، تأیید نهایی کنید."], ["اتاق نمونه", "در «معیارهای اتاق نمونه» معیارها و وزن آن‌ها را تعریف کنید. سرپرست هر خوابگاه سالی یک‌بار اتاق‌ها را امتیاز می‌دهد و اتاق نمونه را اعلام می‌کند؛ نتیجه را در «اتاق‌های نمونه» می‌بینید."]],
+  DORM_SUPERVISOR: [["ساختار", "در «ساختمان و اتاق‌ها» ساختمان و اتاق (تکی یا دسته‌ای) بسازید؛ هر اتاق به‌تعداد ظرفیتش تخت دارد."], ["دانشجو", "دانشجو را ثبت و با «اسکان» به تخت، کف‌خواب یا نفر مازاد اختصاص دهید؛ «جابجایی»، «مرخصی» و «تسویه» هم همین‌جاست."], ["شیفت", "در «شیفت‌ها» متصدیان را به‌ترتیب نوبت انتخاب و برنامه‌ی چرخشی را پیش‌نمایش و ثبت کنید."], ["بررسی گزارش‌ها", "گزارش‌های متصدی و چک‌لیست خدمات را تأیید یا ارجاع دهید؛ موارد بهداشتی را با اقدام و مانع پاسخ دهید. ارجاع‌های مشاوره را فقط خودِ گزارش‌دهنده و اداره مشاوره می‌بینند."], ["درخواست دانشجویان", "درخواست تعمیر و تجهیزات دانشجویان در «تعمیرات و تجهیزات» منتظر تأیید شماست؛ پس از تأیید برای مدیر سیستم می‌رود و دانشجو مرحله را می‌بیند."], ["تعمیرات", "خرابی‌ها را ثبت و پس از رفع، «تأیید رفع» بزنید."], ["اتاق نمونه", "در «اتاق نمونه» هر اتاق را در هر معیار از ۱ تا ۵ امتیاز دهید و سالی یک‌بار یک اتاق را به‌عنوان اتاق نمونه به مدیر سیستم اعلام کنید."]],
   ATTENDANT: [["حضور و غیاب", "اتاق‌به‌اتاق وضعیت هر نفر را بزنید و «ثبت» کنید؛ بدون اینترنت هم ذخیره و بعداً ارسال می‌شود."], ["شیفت", "هنگام ورود «اعلام حضور» و هنگام خروج «اعلام خروج» بزنید و گزارش تحویل شیفت را بنویسید."], ["گزارش‌ها", "غذا، حضور مسئولین و رفتارهای غیرمنتظره را در «گزارش‌ها» ثبت کنید؛ موارد نگران‌کننده را «ارجاع به مشاوره» بدهید."]],
   SERVICE_STAFF: [["چک‌لیست", "چک‌لیست روز را در «چک‌لیست خدمات» پر و به سرپرست تحویل دهید؛ برای مورد انجام‌نشده توضیح بنویسید."], ["ماموریت‌ها", "ماموریت‌هایی که مدیر سیستم داده در همین صفحه است؛ پس از انجام «انجام شد» بزنید."], ["حضور و مرخصی", "اعلام حضور و درخواست مرخصی از منوی خودشان."]],
   COUNSELING: [["روانشناسان", "در «روانشناسان» روانشناسان را تعریف کنید."], ["برنامه حضور", "در «برنامه حضور روانشناسان» روزهای هفته و ساعت حضور هر روانشناس در هر خوابگاه را تعیین کنید."], ["پرونده‌ها", "همه‌ی ارجاع‌ها مستقیم به شما می‌رسد. دریافت کنید و به یک روانشناس بسپارید؛ فقط گزارش‌دهنده، شما و روانشناس سپرده‌شده آن‌ها را می‌بینند."], ["عملکرد", "حضور واقعی در برابر برنامه، جلسه‌ها و زمان رسیدگی هر روانشناس را در «عملکرد روانشناسان» ببینید."]],

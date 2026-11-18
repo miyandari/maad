@@ -3,14 +3,15 @@ import { MaintenanceStatus as S, Prisma, RequestKind, RequestScope, Role } from 
 import { AuditService } from '../audit/audit.service';
 import { AuthUser } from '../common/auth-user';
 import { PrismaService } from '../prisma/prisma.service';
-import { FeedbackDto, StudentRequestDto } from './dto/portal.dto';
+import { FeedbackDto, MergeDto, StudentRequestDto } from './dto/portal.dto';
 
 const REP_WAIT_DAYS = 3;
 const MAX_REQUESTS_PER_DAY = 10;
 const day = 86_400_000;
 
 /** What the student sees of the (internal) request status. Costs and staff details are never shown. */
-function stageOf(r: { status: S; assignedToId: string | null }) {
+function stageOf(r: { status: S; assignedToId: string | null; mergedIntoId?: string | null }) {
+  if (r.status === S.REJECTED && r.mergedIntoId) return { step: 0, label: 'با یک درخواست مشابه ادغام شد' };
   switch (r.status) {
     case S.PENDING_REP: return { step: 1, label: 'در انتظار بررسی نماینده‌ی شورای صنفی' };
     case S.PENDING_SUPERVISOR: return { step: 2, label: 'در انتظار تأیید سرپرست خوابگاه' };
@@ -76,7 +77,7 @@ export class PortalService {
       return {
         id: r.id, title: r.title, description: r.description, kind: r.kind, category: r.category, quantity: r.quantity, scope: r.scope, urgent: r.urgent,
         status: r.status, createdAt: r.createdAt, updatedAt: r.updatedAt, supporters: r.supporters, ...stageOf(r),
-        rejectedReason: rejected?.note ?? null, rejectedByRep: r.rejectedByRep,
+        rejectedReason: rejected?.note ?? null, rejectedByRep: r.rejectedByRep, merged: !!r.mergedIntoId,
         canEscalate: waitedLongEnough || (r.status === S.REJECTED && r.rejectedByRep),
       };
     });
@@ -132,6 +133,46 @@ export class PortalService {
   async returnRequest(actor: AuthUser, id: string, note: string) {
     await this.assertRep(actor);
     return this.repMove(actor, id, S.REJECTED, () => `بازگردانده‌شده توسط نماینده: ${note.trim()}`, true);
+  }
+
+  /**
+   * Representative: merges duplicate collective requests into one main request. The duplicates are closed
+   * (shown to their authors as "merged"), and their authors and supporters become supporters of the main request.
+   */
+  async merge(actor: AuthUser, id: string, dto: MergeDto) {
+    await this.assertRep(actor);
+    const dormitoryId = this.dorm(actor);
+    const dupIds = [...new Set(dto.duplicateIds)];
+    if (dupIds.includes(id)) throw new BadRequestException('درخواست اصلی را نمی‌توان در خودش ادغام کرد');
+
+    const main = await this.prisma.maintenanceRequest.findFirst({ where: { id, dormitoryId, status: S.PENDING_REP } });
+    if (!main) throw new NotFoundException('درخواست اصلی پیدا نشد');
+    const dups = await this.prisma.maintenanceRequest.findMany({ where: { id: { in: dupIds }, dormitoryId, status: S.PENDING_REP, kind: main.kind } });
+    if (dups.length !== dupIds.length) throw new ConflictException('همه‌ی درخواست‌های انتخاب‌شده باید همین‌جا در انتظار نماینده و هم‌نوع درخواست اصلی باشند');
+
+    const supporters = await this.prisma.$transaction(async (tx) => {
+      const res = await tx.maintenanceRequest.updateMany({ where: { id: { in: dupIds }, status: S.PENDING_REP }, data: { status: S.REJECTED, rejectedByRep: false, mergedIntoId: id } });
+      if (res.count !== dupIds.length) throw new ConflictException('یکی از درخواست‌ها قبلاً رسیدگی شده است؛ دوباره باز کنید');
+
+      // authors and supporters of the duplicates now support the main request (never its own author)
+      const old = await tx.requestSupport.findMany({ where: { requestId: { in: dupIds } }, select: { studentId: true } });
+      const students = new Set<string>([...old.map((x) => x.studentId), ...dups.map((d) => d.requestedByStudentId).filter((x): x is string => !!x)]);
+      if (main.requestedByStudentId) students.delete(main.requestedByStudentId);
+      await tx.requestSupport.createMany({ data: [...students].map((studentId) => ({ requestId: id, studentId })), skipDuplicates: true });
+      const total = await tx.requestSupport.count({ where: { requestId: id } });
+      const upd = await tx.maintenanceRequest.updateMany({ where: { id, status: S.PENDING_REP }, data: { supporters: total } });
+      if (upd.count === 0) throw new ConflictException('درخواست اصلی قبلاً رسیدگی شده است');
+
+      await tx.maintenanceEvent.createMany({
+        data: [
+          ...dups.map((d) => ({ requestId: d.id, actorId: actor.id, fromStatus: S.PENDING_REP, toStatus: S.REJECTED, note: `ادغام شد در درخواست مشابه «${main.title}»` })),
+          { requestId: id, actorId: actor.id, fromStatus: S.PENDING_REP, toStatus: S.PENDING_REP, note: `ادغام ${dups.length} درخواست مشابه (${total} حامی)${dto.summary?.trim() ? ': ' + dto.summary.trim() : ''}` },
+        ],
+      });
+      return total;
+    });
+    await this.audit.log({ actor, action: 'council.merge', entity: 'MaintenanceRequest', entityId: id, universityId: main.universityId, meta: { merged: dupIds, supporters } });
+    return { ok: true, merged: dups.length, supporters };
   }
 
   private async repMove(actor: AuthUser, id: string, to: S, note: (supporters: number) => string, byRep: boolean) {

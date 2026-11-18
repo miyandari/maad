@@ -638,6 +638,7 @@ model MaintenanceRequest {
   scope         RequestScope      @default(DORMITORY)
   urgent        Boolean           @default(false)
   rejectedByRep Boolean           @default(false)
+  mergedIntoId  String?           // set when the council rep merged this duplicate into another request
   supporters    Int               @default(0)
   supports      RequestSupport[]
   kind          RequestKind
@@ -974,4 +975,52 @@ model StaffFeedback {
 
   @@index([universityId, createdAt])
   @@index([targetUserId])
+}
+
+// ============================ model room (اتاق نمونه) ============================
+
+/// معیارهای انتخاب اتاق نمونه: یک فهرست برای هر دانشگاه که مدیر سیستم تعریف می‌کند (وزن ۱ تا ۵).
+model ModelRoomCriterion {
+  id           String   @id @default(uuid())
+  universityId String
+  title        String
+  weight       Int      @default(1)
+  order        Int
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@index([universityId, order])
+}
+
+/// امتیاز ۱ تا ۵ سرپرست به یک اتاق برای یک معیار در یک سال شمسی.
+model RoomScore {
+  id           String   @id @default(uuid())
+  universityId String
+  dormitoryId  String
+  roomId       String
+  year         Int      // سال شمسی
+  criterionId  String
+  score        Int
+  scoredById   String
+  updatedAt    DateTime @updatedAt
+
+  @@unique([roomId, year, criterionId])
+  @@index([dormitoryId, year])
+}
+
+/// اتاق نمونه‌ی هر خوابگاه در هر سال (فقط یک‌بار در سال)؛ ریزامتیازها در همان لحظه ذخیره می‌شود.
+model ModelRoomSelection {
+  id           String   @id @default(uuid())
+  universityId String
+  dormitoryId  String
+  roomId       String
+  year         Int      // سال شمسی
+  totalScore   Float    // میانگین وزنی (۱ تا ۵)
+  breakdown    Json     // [{ title, weight, score }]
+  note         String?
+  selectedById String
+  createdAt    DateTime @default(now())
+
+  @@unique([dormitoryId, year])
+  @@index([universityId, year])
 }

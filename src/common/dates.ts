@@ -21,3 +21,9 @@ export const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export const tehranAt = (day: string, hour: number) => new Date(`${day}T${String(hour).padStart(2, '0')}:00:00+03:30`);
 /** JS weekday (0 = Sunday ... 5 = Friday) of a calendar date. */
 export const weekdayOf = (day: string) => dateOnly(day).getUTCDay();
+
+/** Current Persian (Jalali) calendar year, e.g. 1405. */
+export function jalaliYear(now = new Date()): number {
+  const parts = new Intl.DateTimeFormat('en-US-u-ca-persian', { timeZone: TEHRAN, year: 'numeric' }).formatToParts(now);
+  return Number(parts.find((p) => p.type === 'year')?.value);
+}
