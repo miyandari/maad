@@ -4,7 +4,8 @@ import { AuthUser } from '../common/auth-user';
 import { dateStr, todayTehran, weekdayOf } from '../common/dates';
 import { requireDormitory, requireUniversity } from '../common/scope';
 import { PrismaService } from '../prisma/prisma.service';
-import { CheckInDto, ListPresenceDto } from './dto/staff.dto';
+import { checkGeofence } from '../common/geo';
+import { CheckInDto, ClosePresenceDto, GeoDto, ListPresenceDto } from './dto/staff.dto';
 
 const EARLY_MS = 30 * 60_000; // check-in is accepted up to 30 minutes before the shift starts
 
@@ -33,6 +34,7 @@ export class PresenceService {
     const dorm = await this.prisma.dormitory.findFirst({ where: { id: dormitoryId, universityId } });
     if (!dorm) throw new NotFoundException('Dormitory not found');
 
+    const geo = checkGeofence(dorm, dto.location); // extra shifts: the dormitory of the shift is the one checked
     const now = actionTime(dto.clientTime);
     let shiftId: string | null = null;
     let unscheduled = false;
@@ -62,6 +64,7 @@ export class PresenceService {
     return this.prisma.staffPresence.create({
       data: {
         universityId, userId: actor.id, dormitoryId, shiftId, scheduleId, unscheduled, checkInAt: now,
+        checkInDistanceM: geo?.distanceM, checkInAccuracyM: geo?.accuracyM,
         handoverFromUserId: dto.handoverFromUserId, handoverNote: dto.handoverNote,
       },
     });
@@ -80,11 +83,34 @@ export class PresenceService {
     return null;
   }
 
-  async checkOut(actor: AuthUser, clientTime?: string, note?: string) {
+  async checkOut(actor: AuthUser, clientTime?: string, note?: string, location?: GeoDto) {
     const open = await this.prisma.staffPresence.findFirst({ where: { userId: actor.id, checkOutAt: null } });
     if (!open) throw new ConflictException('You are not checked in');
+    const dorm = await this.prisma.dormitory.findUnique({ where: { id: open.dormitoryId } });
+    const geo = dorm ? checkGeofence(dorm, location) : null;
     const at = actionTime(clientTime);
-    return this.prisma.staffPresence.update({ where: { id: open.id }, data: { checkOutAt: at < open.checkInAt ? new Date() : at, checkOutNote: note } });
+    return this.prisma.staffPresence.update({
+      where: { id: open.id },
+      data: { checkOutAt: at < open.checkInAt ? new Date() : at, checkOutNote: note, checkOutDistanceM: geo?.distanceM, checkOutAccuracyM: geo?.accuracyM },
+    });
+  }
+
+  /**
+   * Supervisor (own dormitory) or system manager closes a presence the employee forgot to end
+   * (the employee cannot check out from outside the dormitory radius).
+   */
+  async closeOpen(actor: AuthUser, id: string, dto: ClosePresenceDto) {
+    const open = await this.prisma.staffPresence.findFirst({ where: { id, universityId: requireUniversity(actor), checkOutAt: null } });
+    if (!open) throw new NotFoundException('No open presence found');
+    if (actor.role === Role.DORM_SUPERVISOR && open.dormitoryId !== requireDormitory(actor)) throw new NotFoundException('No open presence found');
+    if (open.userId === actor.id) throw new ForbiddenException('You cannot close your own presence');
+    const now = new Date();
+    const at = dto.at ? new Date(dto.at) : now;
+    if (at < open.checkInAt || at.getTime() > now.getTime() + 5 * 60_000) throw new BadRequestException('زمان خروج باید بعد از ساعت حضور و نه در آینده باشد');
+    return this.prisma.staffPresence.update({
+      where: { id },
+      data: { checkOutAt: at, closedById: actor.id, checkOutNote: `بسته‌شده توسط ${actor.role === Role.SYSTEM_MANAGER ? 'مدیر سیستم' : 'سرپرست'}: ${dto.note.trim()}` },
+    });
   }
 
   current(actor: AuthUser) {

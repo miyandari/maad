@@ -19,6 +19,7 @@ import { DormitoriesModule } from './dormitories/dormitories.module';
 import { HealthModule } from './health/health.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { MessagingModule } from './messaging/messaging.module';
+import { LateArrivalsModule } from './late-arrivals/late-arrivals.module';
 import { ModelRoomsModule } from './model-rooms/model-rooms.module';
 import { PortalModule } from './portal/portal.module';
 import { PrismaModule } from './prisma/prisma.service';
@@ -59,6 +60,7 @@ import { UsersModule } from './users/users.module';
     MaintenanceModule,
     HealthModule,
     ModelRoomsModule,
+    LateArrivalsModule,
     PortalModule,
     AttachmentsModule,
     ChecklistsModule,

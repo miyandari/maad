@@ -4,7 +4,7 @@ import { AuthUser } from '../common/auth-user';
 import { addDays, dateOnly, dateStr, daysBetween, todayTehran } from '../common/dates';
 import { inScope, requireDormitory, requireUniversity } from '../common/scope';
 import { PrismaService } from '../prisma/prisma.service';
-import { AbsentQueryDto, MaintenanceSummaryQueryDto, StaffMonthlyQueryDto } from './dto/reports.dto';
+import { AbsentQueryDto, MaintenanceSummaryQueryDto, ShiftActivityQueryDto, StaffMonthlyQueryDto } from './dto/reports.dto';
 
 const mins = (a: Date, b: Date) => Math.max(0, Math.round((b.getTime() - a.getTime()) / 60_000));
 const overlapMins = (s: Date, e: Date, from: Date, to: Date) => mins(s > from ? s : from, e < to ? e : to);
@@ -83,9 +83,70 @@ export class ReportsService {
       const defined = cap.get(d.id) ?? 0;
       const occupied = count(d.id, AssignmentKind.BED);
       return {
-        dormitoryId: d.id, name: d.name, gender: d.gender, isActive: d.isActive,
+        dormitoryId: d.id, name: d.name, gender: d.gender, ownershipType: d.ownershipType, isActive: d.isActive,
         nominalCapacity: d.nominalCapacity, definedBeds: defined, occupiedBeds: occupied, freeBeds: defined - occupied,
         floorSleepers: count(d.id, AssignmentKind.FLOOR), extra: count(d.id, AssignmentKind.EXTRA),
+      };
+    });
+  }
+
+  // ---------- shift activity ----------
+
+  /**
+   * Evidence from the attendants' own work during each presence (attendance marks, dormitory reports, referrals,
+   * maintenance requests): counts, the longest stretch without work, and the distance recorded at check-in/out.
+   * It shows gaps; whether a gap is a problem (night hours are quiet) is for the supervisor to judge.
+   */
+  async shiftActivity(actor: AuthUser, q: ShiftActivityQueryDto) {
+    const ids = await this.dormIds(actor, q.dormitoryId);
+    const from = new Date(q.from), to = new Date(q.to);
+    if (!(to > from) || to.getTime() - from.getTime() > 93 * 86_400_000) throw new BadRequestException('The range must be 1 to 93 days');
+    const presences = await this.prisma.staffPresence.findMany({
+      where: { dormitoryId: { in: ids }, checkInAt: { gte: from, lt: to }, user: { role: Role.ATTENDANT } },
+      include: { user: { select: { id: true, firstName: true, lastName: true } } },
+      orderBy: { checkInAt: 'desc' }, take: 300,
+    });
+    if (!presences.length) return [];
+    const now = new Date();
+    const userIds = [...new Set(presences.map((p) => p.userId))];
+    const start = new Date(Math.min(...presences.map((p) => p.checkInAt.getTime())));
+    const end = new Date(Math.max(...presences.map((p) => (p.checkOutAt ?? now).getTime())));
+    const range = { gte: start, lte: end };
+    const [att, reports, referrals, maint, dorms] = await Promise.all([
+      this.prisma.attendanceRecord.findMany({ where: { recordedById: { in: userIds }, dormitoryId: { in: ids }, recordedAt: range }, select: { recordedById: true, dormitoryId: true, recordedAt: true } }),
+      this.prisma.dormReport.findMany({ where: { authorId: { in: userIds }, dormitoryId: { in: ids }, createdAt: range }, select: { authorId: true, dormitoryId: true, createdAt: true } }),
+      this.prisma.referral.findMany({ where: { reportedById: { in: userIds }, dormitoryId: { in: ids }, createdAt: range }, select: { reportedById: true, dormitoryId: true, createdAt: true } }),
+      this.prisma.maintenanceRequest.findMany({ where: { requestedById: { in: userIds }, dormitoryId: { in: ids }, createdAt: range }, select: { requestedById: true, dormitoryId: true, createdAt: true } }),
+      this.prisma.dormitory.findMany({ where: { id: { in: ids } }, select: { id: true, name: true } }),
+    ]);
+    const dormName = new Map(dorms.map((d) => [d.id, d.name]));
+    type Ev = { kind: 'attendance' | 'reports' | 'referrals' | 'maintenance'; userId: string; dormitoryId: string; at: Date };
+    const events: Ev[] = [
+      ...att.map((x) => ({ kind: 'attendance' as const, userId: x.recordedById, dormitoryId: x.dormitoryId, at: x.recordedAt })),
+      ...reports.map((x) => ({ kind: 'reports' as const, userId: x.authorId, dormitoryId: x.dormitoryId, at: x.createdAt })),
+      ...referrals.map((x) => ({ kind: 'referrals' as const, userId: x.reportedById, dormitoryId: x.dormitoryId, at: x.createdAt })),
+      ...maint.filter((x) => x.requestedById).map((x) => ({ kind: 'maintenance' as const, userId: x.requestedById as string, dormitoryId: x.dormitoryId, at: x.createdAt })),
+    ];
+    const limit = q.gapHours * 60;
+    return presences.map((p) => {
+      const stop = p.checkOutAt ?? now;
+      const mine = events.filter((e) => e.userId === p.userId && e.dormitoryId === p.dormitoryId && e.at >= p.checkInAt && e.at <= stop).sort((a, b) => a.at.getTime() - b.at.getTime());
+      const points = [p.checkInAt, ...mine.map((e) => e.at), stop];
+      let gap = { min: 0, from: p.checkInAt, to: stop };
+      for (let i = 1; i < points.length; i++) {
+        const m = mins(points[i - 1], points[i]);
+        if (m > gap.min) gap = { min: m, from: points[i - 1], to: points[i] };
+      }
+      const count = (k: Ev['kind']) => mine.filter((e) => e.kind === k).length;
+      const duration = mins(p.checkInAt, stop);
+      return {
+        presenceId: p.id, userId: p.userId, name: `${p.user.firstName} ${p.user.lastName}`.trim(),
+        dormitoryId: p.dormitoryId, dormitoryName: dormName.get(p.dormitoryId) ?? null,
+        checkInAt: p.checkInAt, checkOutAt: p.checkOutAt, open: !p.checkOutAt, unscheduled: p.unscheduled, durationMin: duration,
+        attendance: count('attendance'), reports: count('reports'), referrals: count('referrals'), maintenance: count('maintenance'), total: mine.length,
+        longestGapMin: gap.min, gapFrom: gap.from, gapTo: gap.to,
+        flag: mine.length === 0 && duration >= limit ? 'NO_ACTIVITY' : gap.min >= limit ? 'LONG_GAP' : null,
+        checkInDistanceM: p.checkInDistanceM, checkOutDistanceM: p.checkOutDistanceM, closedByManager: !!p.closedById,
       };
     });
   }

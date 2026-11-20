@@ -4,7 +4,7 @@ import { AuthUser } from '../common/auth-user';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { DashboardService } from './dashboard.service';
-import { AbsentQueryDto, MaintenanceSummaryQueryDto, StaffMonthlyQueryDto } from './dto/reports.dto';
+import { AbsentQueryDto, MaintenanceSummaryQueryDto, ShiftActivityQueryDto, StaffMonthlyQueryDto } from './dto/reports.dto';
 import { ReportsService } from './reports.service';
 
 const MGMT = [Role.SENIOR_ADMIN, Role.SYSTEM_MANAGER];
@@ -28,6 +28,9 @@ export class ReportsController {
 
   @Get('reports/staff-monthly') @Roles(...MGMT_AND_SUPERVISOR)
   staffMonthly(@CurrentUser() u: AuthUser, @Query() q: StaffMonthlyQueryDto) { return this.reports.staffMonthly(u, q); }
+
+  @Get('reports/shift-activity') @Roles(...MGMT_AND_SUPERVISOR)
+  shiftActivity(@CurrentUser() u: AuthUser, @Query() q: ShiftActivityQueryDto) { return this.reports.shiftActivity(u, q); }
 
   @Get('reports/maintenance-summary') @Roles(...MGMT)
   maintenance(@CurrentUser() u: AuthUser, @Query() q: MaintenanceSummaryQueryDto) { return this.reports.maintenanceSummary(u, q); }

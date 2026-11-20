@@ -116,11 +116,33 @@ export class UsersService {
     }
     if (q.role) filters.push({ role: q.role });
     if (q.dormitoryId) filters.push({ dormitoryId: q.dormitoryId });
+    if (q.employmentType) filters.push({ employmentType: q.employmentType });
+    const term = q.search?.trim();
+    if (term) {
+      filters.push({ OR: [
+        { firstName: { contains: term, mode: 'insensitive' } },
+        { lastName: { contains: term, mode: 'insensitive' } },
+        { username: { contains: term } },
+      ] });
+    }
+
+    const dir = q.sortDir ?? (q.sortBy && q.sortBy !== 'createdAt' ? 'asc' : 'desc');
+    const byName: Prisma.UserOrderByWithRelationInput[] = [{ lastName: dir }, { firstName: dir }];
+    let orderBy: Prisma.UserOrderByWithRelationInput[];
+    switch (q.sortBy) {
+      case 'name': orderBy = byName; break;
+      case 'role': orderBy = [{ role: dir }, { lastName: 'asc' }]; break;
+      case 'employmentType': orderBy = [{ employmentType: { sort: dir, nulls: 'last' } }, { lastName: 'asc' }]; break;
+      case 'dormitory': orderBy = [{ dormitory: { name: dir } }, { lastName: 'asc' }]; break;
+      case 'isActive': orderBy = [{ isActive: dir }, { lastName: 'asc' }]; break;
+      default: orderBy = [{ createdAt: dir }];
+    }
+    orderBy.push({ id: 'asc' }); // stable paging
 
     const where: Prisma.UserWhereInput = { AND: filters };
     const [items, total] = await Promise.all([
       this.prisma.user.findMany({
-        where, select: USER_SELECT, orderBy: { createdAt: 'desc' },
+        where, select: USER_SELECT, orderBy,
         skip: (q.page - 1) * q.limit, take: q.limit,
       }),
       this.prisma.user.count({ where }),

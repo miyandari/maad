@@ -304,6 +304,7 @@ model Dormitory {
   latitude        Float?
   longitude       Float?
   landline        String?
+  geofenceRadiusM Int        @default(200) // radius (m) around lat/lng where staff may check in/out; 0 = no restriction
   address         String?
   ownershipType   DormitoryType? // ملکی / استیجاری / خودگردان مشارکتی / خودگردان
   gender          Gender
@@ -399,6 +400,7 @@ model Student {
   leaves      StudentLeave[]
   attendance  AttendanceRecord[]
   referrals   Referral[]
+  lateArrivals LateArrival[]
 
   @@unique([universityId, nationalId])
   @@index([universityId, status])
@@ -495,6 +497,12 @@ model StaffPresence {
   handoverFromUserId String?
   handoverNote       String?
   checkOutNote       String? // report handed to the supervisor / next attendant at check-out
+  // distance (m) from the dormitory and the device's reported accuracy at check-in/out; coordinates themselves are NOT stored
+  checkInDistanceM   Int?
+  checkInAccuracyM   Int?
+  checkOutDistanceM  Int?
+  checkOutAccuracyM  Int?
+  closedById         String?   // supervisor/manager who closed a forgotten presence
 
   @@index([dormitoryId, checkInAt])
   @@index([userId, checkInAt])
@@ -1023,4 +1031,31 @@ model ModelRoomSelection {
 
   @@unique([dormitoryId, year])
   @@index([universityId, year])
+}
+
+// ============================ late arrivals (تأخیر در ورود) ============================
+
+enum LateKind {
+  EXCUSED   // موجه
+  UNEXCUSED // غیرموجه
+}
+
+/// A resident came back to the dormitory late. Every N unexcused ones (default 3) since the last SMS trigger one SMS to the guardian.
+model LateArrival {
+  id                 String    @id @default(uuid())
+  universityId       String
+  dormitoryId        String
+  studentId          String
+  student            Student   @relation(fields: [studentId], references: [id])
+  date               DateTime  @db.Date // the day (Tehran) he was late for
+  arrivedAt          DateTime?
+  kind               LateKind
+  reason             String?
+  recordedById       String
+  createdAt          DateTime  @default(now())
+  guardianNotifiedAt DateTime? // set on every unexcused record counted in a guardian SMS
+
+  @@unique([studentId, date])
+  @@index([dormitoryId, date])
+  @@index([studentId, kind, guardianNotifiedAt])
 }

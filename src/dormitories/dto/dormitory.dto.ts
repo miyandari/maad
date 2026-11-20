@@ -15,6 +15,8 @@ export class CreateDormitoryDto {
   @IsOptional() @IsLatitude() latitude?: number;
   @IsOptional() @IsLongitude() longitude?: number;
   @IsOptional() @IsString() @MaxLength(20) landline?: string;
+  /** Staff may check in/out only within this many metres of the dormitory (0 = no restriction). */
+  @IsOptional() @IsInt() @Min(0) @Max(5000) geofenceRadiusM?: number;
 }
 
 export class UpdateDormitoryDto extends PartialType(CreateDormitoryDto) {

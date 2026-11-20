@@ -5,7 +5,7 @@ import { AuthUser } from '../common/auth-user';
 import { addDays, dateOnly, dateStr, daysBetween, tehranAt, todayTehran, weekdayOf } from '../common/dates';
 import { inScope, requireDormitory, requireUniversity } from '../common/scope';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateHolidaysDto, CreateShiftDto, GenerateShiftsDto, ListHolidaysDto, ListShiftsDto, ShiftSettingsDto } from './dto/staff.dto';
+import { CreateHolidaysDto, CreateShiftDto, GenerateShiftsDto, ListHolidaysDto, ListShiftsDto, ReplaceShiftDto, ShiftSettingsDto } from './dto/staff.dto';
 
 const DEFAULTS = { startHour: 14, workdayEndHour: 8, holidayEndHour: 14, weeklyOffDays: [5] };
 type Rules = typeof DEFAULTS;
@@ -99,16 +99,29 @@ export class ShiftsService {
   }
 
   /**
+   * Who may hold a shift: an active attendant (student workers are attendants) of the dormitory's university.
+   * A supervisor may schedule only his own attendants — and himself, to stay on as the attendant of his dormitory.
+   */
+  private async worker(actor: AuthUser, dorm: { id: string; universityId: string }, userId: string) {
+    const user = await this.prisma.user.findFirst({ where: { id: userId, universityId: dorm.universityId, isActive: true, role: { in: [Role.ATTENDANT, Role.DORM_SUPERVISOR] } } });
+    if (!user) throw new NotFoundException('Attendant not found');
+    if (user.role === Role.DORM_SUPERVISOR) {
+      if (actor.role !== Role.DORM_SUPERVISOR || user.id !== actor.id || dorm.id !== actor.dormitoryId) {
+        throw new ForbiddenException('سرپرست فقط خودش را و فقط در شیفت خوابگاه خودش می‌تواند به‌جای متصدی بگذارد');
+      }
+    } else if (actor.role === Role.DORM_SUPERVISOR && user.dormitoryId !== actor.dormitoryId) {
+      throw new ForbiddenException('You can only schedule your own attendants; ask the system manager for extra shifts');
+    }
+    return user;
+  }
+
+  /**
    * Supervisors schedule their own attendants. The system manager can schedule any attendant of the
    * university into any dormitory — that is how an "extra shift in another dormitory" (جابجایی) is done.
    */
   async create(actor: AuthUser, dto: CreateShiftDto) {
     const dorm = await this.dormitory(actor, dto.dormitoryId);
-    const user = await this.prisma.user.findFirst({ where: { id: dto.userId, universityId: dorm.universityId, role: Role.ATTENDANT, isActive: true } });
-    if (!user) throw new NotFoundException('Attendant not found');
-    if (actor.role === Role.DORM_SUPERVISOR && user.dormitoryId !== actor.dormitoryId) {
-      throw new ForbiddenException('You can only schedule your own attendants; ask the system manager for extra shifts');
-    }
+    const user = await this.worker(actor, dorm, dto.userId);
 
     let start: Date, end: Date, overtimeMinutes = 0;
     if (dto.date) {
@@ -128,7 +141,7 @@ export class ShiftsService {
     const shift = await this.prisma.shift.create({
       data: {
         dormitoryId: dorm.id, userId: user.id, startsAt: start, endsAt: end, overtimeMinutes, note: dto.note, createdById: actor.id,
-        type: dto.type ?? (user.dormitoryId === dorm.id ? ShiftType.REGULAR : ShiftType.EXTRA),
+        type: dto.type ?? (user.role === Role.DORM_SUPERVISOR ? ShiftType.COVER : user.dormitoryId === dorm.id ? ShiftType.REGULAR : ShiftType.EXTRA),
       },
     });
     await this.audit.log({ actor, action: 'shift.create', entity: 'Shift', entityId: shift.id, universityId: dorm.universityId, meta: { userId: user.id, dormitoryId: dorm.id, type: shift.type, overtimeMinutes } });
@@ -204,6 +217,40 @@ export class ShiftsService {
       this.prisma.shift.count({ where }),
     ]);
     return { items, total, page: q.page, limit: q.limit };
+  }
+
+  /**
+   * Hands a shift (same hours, same overtime) to someone else — e.g. the attendant fell ill or took leave.
+   * The old shift is cancelled and a COVER shift is created in one step; conflicts and approved leave of the new person are refused.
+   */
+  async replace(actor: AuthUser, id: string, dto: ReplaceShiftDto) {
+    const shift = await this.prisma.shift.findUnique({ where: { id }, include: { dormitory: true, user: { select: { firstName: true, lastName: true } } } });
+    if (!shift || !inScope(actor, { universityId: shift.dormitory.universityId, dormitoryId: shift.dormitoryId })) throw new NotFoundException('Shift not found');
+    if (shift.cancelledAt) throw new ConflictException('این شیفت قبلاً لغو شده است');
+    if (shift.userId === dto.userId) throw new BadRequestException('جایگزین باید فرد دیگری باشد');
+    if (await this.prisma.staffPresence.count({ where: { shiftId: id } })) {
+      throw new ConflictException('این شیفت شروع شده و حضور ثبت‌شده دارد؛ ابتدا حضور او را ببندید و برای ادامه‌ی شیفت، شیفت جدید با زمان دلخواه بسازید');
+    }
+    const user = await this.worker(actor, shift.dormitory, dto.userId);
+    const c = await this.conflicts([user.id], shift.startsAt, shift.endsAt);
+    if (c.shifts.length) throw new ConflictException('جایگزین در این بازه شیفت دیگری دارد');
+    if (c.leaves.length) throw new ConflictException('جایگزین در این بازه مرخصی تأییدشده دارد');
+
+    const created = await this.prisma.$transaction(async (tx) => {
+      const done = await tx.shift.updateMany({ where: { id, cancelledAt: null }, data: { cancelledAt: new Date() } });
+      if (done.count === 0) throw new ConflictException('این شیفت قبلاً لغو شده است');
+      return tx.shift.create({
+        data: {
+          dormitoryId: shift.dormitoryId, userId: user.id, startsAt: shift.startsAt, endsAt: shift.endsAt, overtimeMinutes: shift.overtimeMinutes,
+          type: ShiftType.COVER, createdById: actor.id, note: dto.note?.trim() || `جایگزین ${shift.user.firstName} ${shift.user.lastName}`,
+        },
+      });
+    });
+    await this.audit.log({
+      actor, action: 'shift.replace', entity: 'Shift', entityId: created.id, universityId: shift.dormitory.universityId,
+      meta: { replaced: id, from: shift.userId, to: user.id, dormitoryId: shift.dormitoryId },
+    });
+    return created;
   }
 
   async cancel(actor: AuthUser, id: string) {

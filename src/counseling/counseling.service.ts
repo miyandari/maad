@@ -243,28 +243,20 @@ export class CounselingService {
     });
   }
 
-private expand<T extends PsychSchedule>(
-  schedules: T[],
-  from: string,
-  to: string,
-): { date: string; s: T }[] {
-  const out: { date: string; s: T }[] = [];
-
-  for (let i = 0; i <= daysBetween(from, to); i++) {
-    const d = addDays(from, i);
-    const wd = weekdayOf(d);
-
-    for (const s of schedules) {
-      if (!s.weekdays.includes(wd)) continue;
-      if (s.validFrom && d < dateStr(s.validFrom)) continue;
-      if (s.validTo && d > dateStr(s.validTo)) continue;
-
-      out.push({ date: d, s });
+  private expand<T extends PsychSchedule>(schedules: T[], from: string, to: string) {
+    const out: { date: string; s: T }[] = [];
+    for (let i = 0; i <= daysBetween(from, to); i++) {
+      const d = addDays(from, i);
+      const wd = weekdayOf(d);
+      for (const s of schedules) {
+        if (!s.weekdays.includes(wd)) continue;
+        if (s.validFrom && d < dateStr(s.validFrom)) continue;
+        if (s.validTo && d > dateStr(s.validTo)) continue;
+        out.push({ date: d, s });
+      }
     }
+    return out;
   }
-
-  return out;
-}
 
   /** Concrete visits (date + hours) of the weekly plans, with attendance: attended / missed / upcoming. */
   async visits(actor: AuthUser, q: VisitsQueryDto) {

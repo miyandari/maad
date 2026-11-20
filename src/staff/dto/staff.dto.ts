@@ -1,6 +1,6 @@
 import { Transform, Type } from 'class-transformer';
 import { LeaveKind, LeaveStatus, ShiftType } from '@prisma/client';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsEnum, IsInt, IsLatitude, IsLongitude, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateNested } from 'class-validator';
 import { DATE_RE } from '../../common/dates';
 import { PaginationDto } from '../../common/pagination.dto';
 
@@ -18,6 +18,12 @@ export class CreateShiftDto {
   @IsOptional() @IsString() @MaxLength(300) note?: string;
 }
 
+export class ReplaceShiftDto {
+  /** The person who takes over this shift (an attendant, a student worker, or — for a supervisor — himself). */
+  @IsUUID() userId: string;
+  @IsOptional() @IsString() @MaxLength(300) note?: string;
+}
+
 export class ListShiftsDto extends PaginationDto {
   @IsOptional() @IsUUID() dormitoryId?: string;
   @IsOptional() @IsUUID() userId?: string;
@@ -25,7 +31,21 @@ export class ListShiftsDto extends PaginationDto {
   @IsOptional() @IsDateString() to?: string;
 }
 
+/** Device position at the moment of the action (taken on the device; for offline actions at click time). */
+export class GeoDto {
+  @IsLatitude() lat: number;
+  @IsLongitude() lng: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(100000) accuracy?: number;
+}
+
+export class ClosePresenceDto {
+  /** Real time of leaving, if known (default: now). */
+  @IsOptional() @IsDateString() at?: string;
+  @IsString() @IsNotEmpty() @MaxLength(500) note: string;
+}
+
 export class CheckInDto {
+  @IsOptional() @ValidateNested() @Type(() => GeoDto) location?: GeoDto;
   /** Time the action really happened (set by the offline queue). Accepted up to 7 days back. */
   @IsOptional() @IsDateString() clientTime?: string;
   @IsOptional() @IsUUID() dormitoryId?: string;
@@ -56,6 +76,7 @@ export class ListLeavesDto extends PaginationDto {
 }
 
 export class CheckOutDto {
+  @IsOptional() @ValidateNested() @Type(() => GeoDto) location?: GeoDto;
   @IsOptional() @IsString() @MaxLength(1000) handoverNote?: string;
   @IsOptional() @IsDateString() clientTime?: string;
 }

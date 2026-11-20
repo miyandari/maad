@@ -18,6 +18,8 @@ export class AttendanceController {
     return this.svc.roster(u, id, q.date);
   }
 
+  // attendance is recorded by attendants (student workers included) and the system manager; the supervisor only views it,
+  // unless he holds an attendant shift himself (checked in the service)
   @Put('dormitories/:id/attendance')
   @Roles(Role.SYSTEM_MANAGER, Role.DORM_SUPERVISOR, Role.ATTENDANT)
   record(@CurrentUser() u: AuthUser, @Param('id', uuid) id: string, @Body() dto: RecordAttendanceDto) {

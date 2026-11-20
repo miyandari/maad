@@ -37,9 +37,16 @@ export class CreateUserDto {
   @IsOptional() @IsUUID() dormitoryId?: string;
 }
 
+export const USER_SORTS = ['createdAt', 'name', 'role', 'employmentType', 'dormitory', 'isActive'] as const;
+
 export class ListUsersDto extends PaginationDto {
   @IsOptional() @IsEnum(Role) role?: Role;
   @IsOptional() @IsUUID() dormitoryId?: string;
+  @IsOptional() @IsEnum(EmploymentType) employmentType?: EmploymentType;
+  /** نام، نام خانوادگی یا کد ملی (بخشی از متن) */
+  @IsOptional() @IsString() @MaxLength(100) search?: string;
+  @IsOptional() @IsIn(USER_SORTS as unknown as string[]) sortBy?: (typeof USER_SORTS)[number];
+  @IsOptional() @IsIn(['asc', 'desc']) sortDir?: 'asc' | 'desc';
   @IsOptional() @IsUUID() universityId?: string; // honoured for SUPER_ADMIN only
 }
 

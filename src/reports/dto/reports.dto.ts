@@ -14,6 +14,14 @@ export class StaffMonthlyQueryDto {
   @IsOptional() @IsUUID() dormitoryId?: string;
 }
 
+export class ShiftActivityQueryDto {
+  @IsDateString() from: string;
+  @IsDateString() to: string;
+  @IsOptional() @IsUUID() dormitoryId?: string;
+  /** A stretch of this many hours without any recorded work inside a presence is flagged (default 4). */
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(12) gapHours: number = 4;
+}
+
 export class MaintenanceSummaryQueryDto {
   @IsOptional() @IsDateString() from?: string;
   @IsOptional() @IsDateString() to?: string;

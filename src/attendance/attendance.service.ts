@@ -11,7 +11,7 @@ import { HistoryQueryDto, RecordAttendanceDto } from './dto/attendance.dto';
 /** How far back each role may record/correct attendance (days). */
 const BACKDATE_DAYS: Partial<Record<Role, number>> = {
   [Role.ATTENDANT]: 3,
-  [Role.DORM_SUPERVISOR]: 7,
+  [Role.DORM_SUPERVISOR]: 1,
   [Role.SYSTEM_MANAGER]: 3650,
 };
 
@@ -65,6 +65,15 @@ export class AttendanceService {
 
   async record(actor: AuthUser, dormitoryId: string, dto: RecordAttendanceDto) {
     const d = await this.dormitory(actor, dormitoryId);
+    if (actor.role === Role.DORM_SUPERVISOR) {
+      // the supervisor does not record attendance — except while he himself holds an attendant shift here (he stayed on in place of the attendant)
+      const now = new Date();
+      const own = await this.prisma.shift.findFirst({
+        where: { userId: actor.id, dormitoryId, cancelledAt: null, startsAt: { lte: now }, endsAt: { gte: new Date(now.getTime() - 3 * 3_600_000) } },
+        select: { id: true },
+      });
+      if (!own) throw new ForbiddenException('سرپرست فقط در شیفتی که خودش به‌جای متصدی دارد می‌تواند حضور و غیاب ثبت کند');
+    }
     const today = todayTehran();
     const date = dto.date ?? today;
     if (date > today) throw new BadRequestException('Attendance cannot be recorded for a future date');

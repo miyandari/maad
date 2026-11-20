@@ -4,7 +4,7 @@ import { AuthUser } from '../common/auth-user';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { DecisionDto } from '../common/decision.dto';
-import { CheckInDto, CheckOutDto, CreateHolidaysDto, CreateLeaveDto, CreateShiftDto, GenerateShiftsDto, ListHolidaysDto, ListLeavesDto, ListPresenceDto, ListShiftsDto, ShiftSettingsDto } from './dto/staff.dto';
+import { CheckInDto, CheckOutDto, ClosePresenceDto, ReplaceShiftDto, CreateHolidaysDto, CreateLeaveDto, CreateShiftDto, GenerateShiftsDto, ListHolidaysDto, ListLeavesDto, ListPresenceDto, ListShiftsDto, ShiftSettingsDto } from './dto/staff.dto';
 import { LeavesService } from './leaves.service';
 import { PresenceService } from './presence.service';
 import { ShiftsService } from './shifts.service';
@@ -42,6 +42,9 @@ export class StaffController {
   @Delete('shifts/holidays/:id') @Roles(Role.SYSTEM_MANAGER)
   deleteHoliday(@CurrentUser() u: AuthUser, @Param('id', uuid) id: string) { return this.shifts.deleteHoliday(u, id); }
 
+  @Post('shifts/:id/replace') @HttpCode(200) @Roles(Role.SYSTEM_MANAGER, Role.DORM_SUPERVISOR)
+  replaceShift(@CurrentUser() u: AuthUser, @Param('id', uuid) id: string, @Body() dto: ReplaceShiftDto) { return this.shifts.replace(u, id, dto); }
+
   @Post('shifts/:id/cancel') @HttpCode(200) @Roles(Role.SYSTEM_MANAGER, Role.DORM_SUPERVISOR)
   cancelShift(@CurrentUser() u: AuthUser, @Param('id', uuid) id: string) { return this.shifts.cancel(u, id); }
 
@@ -50,7 +53,10 @@ export class StaffController {
   checkIn(@CurrentUser() u: AuthUser, @Body() dto: CheckInDto) { return this.presence.checkIn(u, dto); }
 
   @Post('presence/check-out') @HttpCode(200) @Roles(...PRESENCE_ROLES)
-  checkOut(@CurrentUser() u: AuthUser, @Body() dto: CheckOutDto) { return this.presence.checkOut(u, dto.clientTime, dto.handoverNote); }
+  checkOut(@CurrentUser() u: AuthUser, @Body() dto: CheckOutDto) { return this.presence.checkOut(u, dto.clientTime, dto.handoverNote, dto.location); }
+
+  @Post('presence/:id/close') @HttpCode(200) @Roles(Role.SYSTEM_MANAGER, Role.DORM_SUPERVISOR)
+  closePresence(@CurrentUser() u: AuthUser, @Param('id', uuid) id: string, @Body() dto: ClosePresenceDto) { return this.presence.closeOpen(u, id, dto); }
 
   @Get('presence/me') @Roles(...PRESENCE_ROLES)
   myPresence(@CurrentUser() u: AuthUser) { return this.presence.current(u); }
